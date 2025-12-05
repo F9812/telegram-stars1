@@ -71,6 +71,7 @@ class SpaceIncrementor {
         this.lastUpdate = Date.now();
         this.saveInterval = null;
         this.gameLoopInterval = null;
+        this.renderInterval = null;
         
         // Таблица лидеров
         this.leaderboard = [];
@@ -97,14 +98,32 @@ class SpaceIncrementor {
                 const timePassed = Date.now() - data.lastSaveTime;
                 this.playTime += timePassed / 1000;
                 
+                // Восстанавливаем время из сохранения
+                if (data.lastSaveTime) {
+                    const offlineTime = Date.now() - data.lastSaveTime;
+                    
+                    // Корректируем таймер престижа
+                    if (this.nextPrestigeTime) {
+                        const remaining = this.nextPrestigeTime - data.lastSaveTime;
+                        this.nextPrestigeTime = Date.now() + Math.max(0, remaining - offlineTime);
+                    }
+                    
+                    // Корректируем таймер ивента
+                    if (this.eventEndTime) {
+                        const remaining = this.eventEndTime - data.lastSaveTime;
+                        this.eventEndTime = Date.now() + Math.max(0, remaining - offlineTime);
+                    }
+                    
+                    // Корректируем следующий ивент
+                    if (this.nextEventTime) {
+                        const remaining = this.nextEventTime - data.lastSaveTime;
+                        this.nextEventTime = Date.now() + Math.max(0, remaining - offlineTime);
+                    }
+                }
+                
                 // Проверяем ивенты
                 if (this.activeEvent && Date.now() > this.eventEndTime) {
                     this.activeEvent = null;
-                }
-                
-                // Проверяем престиж
-                if (Date.now() > this.nextPrestigeTime) {
-                    this.nextPrestigeTime = Date.now() + GAME_CONSTANTS.PRESTIGE_TIME;
                 }
                 
                 // Пересчитываем производство
@@ -156,7 +175,7 @@ class SpaceIncrementor {
                 boosts: this.boosts,
                 
                 // Версия
-                version: '5.0',
+                version: '5.1',
                 timestamp: Date.now()
             };
             
@@ -166,31 +185,37 @@ class SpaceIncrementor {
             this.updateLeaderboardEntry();
             
             // Визуальная обратная связь
-            const icon = document.getElementById('save-icon');
-            const text = document.getElementById('save-status-text');
-            
-            if (icon) {
-                icon.style.color = '#00ff9d';
-                setTimeout(() => {
-                    icon.style.color = '';
-                }, 1000);
-            }
-            
-            if (text) {
-                const originalText = text.textContent;
-                text.textContent = 'Сохранено!';
-                text.style.color = '#00ff9d';
-                setTimeout(() => {
-                    text.textContent = originalText;
-                    text.style.color = '';
-                }, 2000);
-            }
+            this.showSaveFeedback();
             
             console.log('💾 Игра сохранена');
             return true;
         } catch (e) {
             console.error('❌ Ошибка сохранения:', e);
             return false;
+        }
+    }
+    
+    showSaveFeedback() {
+        const icon = document.getElementById('save-icon');
+        const text = document.getElementById('save-status-text');
+        
+        if (icon) {
+            icon.style.color = '#00ff9d';
+            icon.style.transform = 'scale(1.2)';
+            setTimeout(() => {
+                icon.style.color = '';
+                icon.style.transform = '';
+            }, 500);
+        }
+        
+        if (text) {
+            const originalText = text.textContent;
+            text.textContent = 'Сохранено!';
+            text.style.color = '#00ff9d';
+            setTimeout(() => {
+                text.textContent = originalText;
+                text.style.color = '';
+            }, 2000);
         }
     }
     
@@ -206,6 +231,9 @@ class SpaceIncrementor {
         // Запускаем автосохранение
         this.startAutoSave();
         
+        // Запускаем рендер таймеров
+        this.startTimerRendering();
+        
         // Первый рендер
         this.render();
         
@@ -216,21 +244,11 @@ class SpaceIncrementor {
         console.log('🔗 Настраиваем обработчики...');
         
         // Клик по ядру
-        const coreButton = document.getElementById('core');
-        if (coreButton) {
-            coreButton.addEventListener('click', (e) => this.handleClick(e));
-        }
+        document.getElementById('core').addEventListener('click', (e) => this.handleClick(e));
         
         // Быстрые улучшения
-        const boost2x = document.getElementById('boost-2x');
-        if (boost2x) {
-            boost2x.addEventListener('click', () => this.buyBoost('click2x', 100));
-        }
-        
-        const boost5x = document.getElementById('boost-5x');
-        if (boost5x) {
-            boost5x.addEventListener('click', () => this.buyBoost('auto5x', 500));
-        }
+        document.getElementById('boost-2x').addEventListener('click', () => this.buyBoost('click2x', 100));
+        document.getElementById('boost-5x').addEventListener('click', () => this.buyBoost('auto5x', 500));
         
         // Вкладки улучшений
         document.querySelectorAll('.tab').forEach(tab => {
@@ -249,95 +267,44 @@ class SpaceIncrementor {
         });
         
         // Массовые покупки
-        const buy10 = document.getElementById('buy-10');
-        if (buy10) {
-            buy10.addEventListener('click', () => this.buyMultiple(10));
-        }
-        
-        const buy100 = document.getElementById('buy-100');
-        if (buy100) {
-            buy100.addEventListener('click', () => this.buyMultiple(100));
-        }
-        
-        const buyMax = document.getElementById('buy-max');
-        if (buyMax) {
-            buyMax.addEventListener('click', () => this.buyMax());
-        }
+        document.getElementById('buy-10').addEventListener('click', () => this.buyMultiple(10));
+        document.getElementById('buy-100').addEventListener('click', () => this.buyMultiple(100));
+        document.getElementById('buy-max').addEventListener('click', () => this.buyMax());
         
         // Престиж
-        const prestigeBtn = document.getElementById('prestige-btn');
-        if (prestigeBtn) {
-            prestigeBtn.addEventListener('click', () => this.prestige());
-        }
+        document.getElementById('prestige-btn').addEventListener('click', () => this.prestige());
         
         // Настройки
-        const settingsBtn = document.getElementById('settings-btn');
-        if (settingsBtn) {
-            settingsBtn.addEventListener('click', () => this.showSettings());
-        }
-        
-        const saveBtn = document.getElementById('save-btn');
-        if (saveBtn) {
-            saveBtn.addEventListener('click', () => this.saveGame());
-        }
-        
-        const closeModal = document.querySelector('.close-modal');
-        if (closeModal) {
-            closeModal.addEventListener('click', () => this.hideSettings());
-        }
-        
-        const saveName = document.getElementById('save-name');
-        if (saveName) {
-            saveName.addEventListener('click', () => this.changeUsername());
-        }
+        document.getElementById('settings-btn').addEventListener('click', () => this.showSettings());
+        document.getElementById('save-btn').addEventListener('click', () => this.saveGame());
+        document.querySelector('.close-modal').addEventListener('click', () => this.hideSettings());
+        document.getElementById('save-name').addEventListener('click', () => this.changeUsername());
         
         // Настройки чекбоксы
-        const autoSave = document.getElementById('auto-save');
-        if (autoSave) {
-            autoSave.addEventListener('change', (e) => {
-                this.settings.autoSave = e.target.checked;
-                this.saveGame();
-            });
-        }
+        document.getElementById('auto-save').addEventListener('change', (e) => {
+            this.settings.autoSave = e.target.checked;
+            this.saveGame();
+        });
         
-        const animations = document.getElementById('animations');
-        if (animations) {
-            animations.addEventListener('change', (e) => {
-                this.settings.animations = e.target.checked;
-            });
-        }
+        document.getElementById('animations').addEventListener('change', (e) => {
+            this.settings.animations = e.target.checked;
+        });
         
-        const notifications = document.getElementById('notifications');
-        if (notifications) {
-            notifications.addEventListener('change', (e) => {
-                this.settings.notifications = e.target.checked;
-            });
-        }
+        document.getElementById('notifications').addEventListener('change', (e) => {
+            this.settings.notifications = e.target.checked;
+        });
         
-        const numberFormat = document.getElementById('number-format');
-        if (numberFormat) {
-            numberFormat.addEventListener('change', (e) => {
-                this.settings.numberFormat = e.target.value;
-                this.render();
-            });
-        }
+        document.getElementById('number-format').addEventListener('change', (e) => {
+            this.settings.numberFormat = e.target.value;
+            this.render();
+        });
         
         // Импорт/экспорт
-        const exportBtn = document.getElementById('export-btn');
-        if (exportBtn) {
-            exportBtn.addEventListener('click', () => this.exportSave());
-        }
-        
-        const importBtn = document.getElementById('import-btn');
-        if (importBtn) {
-            importBtn.addEventListener('click', () => this.importSave());
-        }
+        document.getElementById('export-btn').addEventListener('click', () => this.exportSave());
+        document.getElementById('import-btn').addEventListener('click', () => this.importSave());
         
         // Сброс
-        const resetBtn = document.getElementById('reset-btn');
-        if (resetBtn) {
-            resetBtn.addEventListener('click', () => this.resetGame());
-        }
+        document.getElementById('reset-btn').addEventListener('click', () => this.resetGame());
         
         console.log('✅ Обработчики настроены');
     }
@@ -349,15 +316,30 @@ class SpaceIncrementor {
             clearInterval(this.gameLoopInterval);
         }
         
-        // Игровой цикл - обновляем каждые 100мс для плавности
+        // Игровой цикл - обновляем логику каждые 100мс
         this.gameLoopInterval = setInterval(() => {
-            this.updateGame();
+            this.updateGameLogic();
         }, 100);
         
         console.log('✅ Игровой цикл запущен');
     }
     
-    updateGame() {
+    startTimerRendering() {
+        console.log('⏰ Запуск рендера таймеров...');
+        
+        if (this.renderInterval) {
+            clearInterval(this.renderInterval);
+        }
+        
+        // Отдельный интервал для обновления таймеров каждую секунду
+        this.renderInterval = setInterval(() => {
+            this.updateTimersDisplay();
+        }, 1000); // Обновляем каждую секунду
+        
+        console.log('✅ Рендер таймеров запущен');
+    }
+    
+    updateGameLogic() {
         const now = Date.now();
         const deltaTime = (now - this.lastUpdate) / 1000; // В секундах
         
@@ -373,17 +355,6 @@ class SpaceIncrementor {
         
         // Обновляем ивенты
         this.updateEvents();
-        
-        // Обновляем престиж таймер
-        this.updatePrestigeTimer();
-        
-        // Сохраняем каждую минуту
-        if (now - this.lastUpdate > 60000) {
-            this.saveGame();
-        }
-        
-        // Рендерим обновления
-        this.render();
         
         this.lastUpdate = now;
     }
@@ -405,8 +376,74 @@ class SpaceIncrementor {
         }
     }
     
-    updatePrestigeTimer() {
-        // Таймер обновляется автоматически в updateGame
+    updateTimersDisplay() {
+        // Обновляем таймер престижа
+        const prestigeTimeLeft = this.nextPrestigeTime - Date.now();
+        const prestigeElement = document.getElementById('prestige-time-left');
+        if (prestigeElement) {
+            prestigeElement.textContent = this.formatTime(Math.max(0, prestigeTimeLeft));
+        }
+        
+        // Обновляем таймер ивента
+        const eventElement = document.getElementById('next-event');
+        if (eventElement) {
+            if (this.activeEvent) {
+                const eventTimeLeft = this.eventEndTime - Date.now();
+                eventElement.textContent = this.formatTime(Math.max(0, eventTimeLeft));
+            } else {
+                const nextEventTimeLeft = this.nextEventTime - Date.now();
+                eventElement.textContent = this.formatTime(Math.max(0, nextEventTimeLeft));
+            }
+        }
+        
+        // Обновляем время игры
+        const playtimeElement = document.getElementById('playtime');
+        if (playtimeElement) {
+            playtimeElement.textContent = this.formatTime(this.playTime * 1000);
+        }
+        
+        // Обновляем прогресс престижа
+        const required = this.getPrestigeRequirement();
+        const progress = Math.min(this.totalEnergy / required, 1);
+        const progressBar = document.getElementById('prestige-progress-bar');
+        const progressText = document.getElementById('prestige-progress-text');
+        
+        if (progressBar) {
+            progressBar.style.width = `${progress * 100}%`;
+        }
+        
+        if (progressText) {
+            progressText.textContent = `${Math.floor(progress * 100)}%`;
+        }
+        
+        // Обновляем кнопку престижа
+        this.updatePrestigeButton();
+    }
+    
+    updatePrestigeButton() {
+        const prestigeBtn = document.getElementById('prestige-btn');
+        if (!prestigeBtn) return;
+        
+        const required = this.getPrestigeRequirement();
+        const timeLeft = this.nextPrestigeTime - Date.now();
+        const pointsReward = Math.floor(this.totalEnergy / required);
+        
+        if (this.canPrestige()) {
+            prestigeBtn.disabled = false;
+            prestigeBtn.innerHTML = `<i class="fas fa-sync-alt"></i> Переродиться (+${pointsReward})`;
+        } else {
+            prestigeBtn.disabled = true;
+            let reason = '';
+            
+            if (this.totalEnergy < required) {
+                const needed = required - this.totalEnergy;
+                reason = `Нужно ${this.formatNumber(needed)} энергии`;
+            } else {
+                reason = `Осталось ${this.formatTime(timeLeft)}`;
+            }
+            
+            prestigeBtn.innerHTML = `<i class="fas fa-clock"></i> ${reason}`;
+        }
     }
     
     startAutoSave() {
@@ -454,7 +491,7 @@ class SpaceIncrementor {
         this.checkUnlocks();
         
         // Рендерим
-        this.render();
+        this.renderStats();
     }
     
     createClickEffect(event, power) {
@@ -529,6 +566,8 @@ class SpaceIncrementor {
             if (this.settings.notifications) {
                 this.showMessage(`Куплено ${bought} ${generator.name}`, 'success');
             }
+            
+            this.renderStats();
         }
         
         return bought;
@@ -556,7 +595,7 @@ class SpaceIncrementor {
         }
         
         if (totalBought > 0) {
-            this.render();
+            this.renderStats();
         }
         
         return totalBought;
@@ -580,7 +619,7 @@ class SpaceIncrementor {
             if (this.settings.notifications) {
                 this.showMessage(`Куплено ${bought} генераторов`, 'success');
             }
-            this.render();
+            this.renderStats();
         }
         
         return bought;
@@ -622,6 +661,8 @@ class SpaceIncrementor {
         if (this.settings.notifications) {
             this.showMessage(`${multiplier.name} куплен!`, 'success');
         }
+        
+        this.renderStats();
         
         return true;
     }
@@ -822,6 +863,8 @@ class SpaceIncrementor {
         if (this.settings.notifications) {
             this.showMessage(`Начат ивент: ${event.name}`, 'success');
         }
+        
+        this.updateTimersDisplay();
     }
     
     loadLeaderboard() {
@@ -956,6 +999,11 @@ class SpaceIncrementor {
     }
     
     render() {
+        this.renderStats();
+        this.renderUpgrades();
+    }
+    
+    renderStats() {
         try {
             // Основная статистика
             document.getElementById('energy').textContent = this.formatNumber(this.energy);
@@ -966,7 +1014,6 @@ class SpaceIncrementor {
             document.getElementById('prestige-points').textContent = this.prestigePoints;
             document.getElementById('username').textContent = this.settings.username;
             document.getElementById('player-name-display').querySelector('span').textContent = this.settings.username;
-            document.getElementById('playtime').textContent = this.formatTime(this.playTime * 1000);
             
             // Рассчитываем силу клика
             let clickPower = GAME_CONSTANTS.BASE_POWER;
@@ -977,58 +1024,12 @@ class SpaceIncrementor {
             document.getElementById('click-power-value').textContent = this.formatNumber(clickPower);
             document.getElementById('auto-power-value').textContent = this.formatNumber(this.energyPerSecond);
             
-            // Престиж
+            // Престиж требования
             const required = this.getPrestigeRequirement();
-            const progress = Math.min(this.totalEnergy / required, 1);
-            const timeLeft = this.nextPrestigeTime - Date.now();
             const pointsReward = Math.floor(this.totalEnergy / required);
             
             document.getElementById('prestige-required').textContent = this.formatNumber(required);
-            document.getElementById('prestige-progress-bar').style.width = `${progress * 100}%`;
-            document.getElementById('prestige-progress-text').textContent = `${Math.floor(progress * 100)}%`;
-            document.getElementById('prestige-time-left').textContent = this.formatTime(Math.max(0, timeLeft));
             document.getElementById('prestige-reward-points').textContent = pointsReward;
-            
-            const prestigeBtn = document.getElementById('prestige-btn');
-            if (prestigeBtn) {
-                if (this.canPrestige()) {
-                    prestigeBtn.disabled = false;
-                    prestigeBtn.innerHTML = `<i class="fas fa-sync-alt"></i> Переродиться (+${pointsReward})`;
-                } else {
-                    prestigeBtn.disabled = true;
-                    let reason = '';
-                    
-                    if (this.totalEnergy < required) {
-                        const needed = required - this.totalEnergy;
-                        reason = `Нужно ${this.formatNumber(needed)} энергии`;
-                    } else {
-                        reason = `Осталось ${this.formatTime(timeLeft)}`;
-                    }
-                    
-                    prestigeBtn.innerHTML = `<i class="fas fa-clock"></i> ${reason}`;
-                }
-            }
-            
-            // Ивенты
-            if (this.activeEvent) {
-                const eventCard = document.getElementById('event-card');
-                const timeLeftEvent = this.eventEndTime - Date.now();
-                
-                eventCard.innerHTML = `
-                    <div class="event-icon">
-                        <i class="${this.activeEvent.icon}"></i>
-                    </div>
-                    <div class="event-info">
-                        <h4>${this.activeEvent.name}</h4>
-                        <p>Осталось: <span>${this.formatTime(timeLeftEvent)}</span></p>
-                    </div>
-                `;
-                
-                document.getElementById('next-event').textContent = this.formatTime(timeLeftEvent);
-            } else {
-                const timeToNext = Math.max(0, this.nextEventTime - Date.now());
-                document.getElementById('next-event').textContent = this.formatTime(timeToNext);
-            }
             
             // Быстрые улучшения
             const boost2x = document.getElementById('boost-2x');
@@ -1042,6 +1043,12 @@ class SpaceIncrementor {
                         <span>Куплено</span>
                         <small>Активно</small>
                     `;
+                } else {
+                    boost2x.innerHTML = `
+                        <i class="fas fa-expand-alt"></i>
+                        <span>x2 Клик</span>
+                        <small>100 энергии</small>
+                    `;
                 }
             }
             
@@ -1052,6 +1059,12 @@ class SpaceIncrementor {
                         <i class="fas fa-check-circle"></i>
                         <span>Куплено</span>
                         <small>Активно</small>
+                    `;
+                } else {
+                    boost5x.innerHTML = `
+                        <i class="fas fa-rocket"></i>
+                        <span>x5 Авто</span>
+                        <small>500 энергии</small>
                     `;
                 }
             }
@@ -1065,18 +1078,14 @@ class SpaceIncrementor {
             if (buy100) buy100.disabled = this.energy < 50;
             if (buyMax) buyMax.disabled = this.energy < 10;
             
-            // Рендерим генераторы и множители
-            this.renderGenerators();
-            this.renderMultipliers();
-            
-            // Обновляем таблицу лидеров
-            const activeTab = document.querySelector('.leaderboard-tab.active');
-            if (activeTab) {
-                this.updateLeaderboard(activeTab.dataset.board);
-            }
         } catch (e) {
-            console.error('❌ Ошибка рендера:', e);
+            console.error('❌ Ошибка рендера статистики:', e);
         }
+    }
+    
+    renderUpgrades() {
+        this.renderGenerators();
+        this.renderMultipliers();
     }
     
     renderGenerators() {
@@ -1210,7 +1219,7 @@ class SpaceIncrementor {
                 this.showMessage('Имя сохранено!', 'success');
             }
             
-            this.render();
+            this.renderStats();
         }
     }
     
@@ -1274,45 +1283,8 @@ class SpaceIncrementor {
             localStorage.removeItem('spaceIncrementorSave');
             localStorage.removeItem('spaceIncrementorLeaderboard');
             
-            // Сбрасываем состояние
-            this.energy = 0;
-            this.totalEnergy = 0;
-            this.energyPerSecond = 0;
-            this.totalClicks = 0;
-            this.playTime = 0;
-            this.startTime = Date.now();
-            
-            this.prestigeLevel = 0;
-            this.prestigePoints = 0;
-            this.lastPrestigeTime = Date.now();
-            this.nextPrestigeTime = Date.now() + GAME_CONSTANTS.PRESTIGE_TIME;
-            
-            this.activeEvent = null;
-            this.eventEndTime = 0;
-            this.nextEventTime = Date.now() + GAME_CONSTANTS.EVENT_INTERVAL;
-            
-            for (const gen of this.generators) {
-                gen.owned = 0;
-                gen.cost = gen.baseCost;
-                gen.unlocked = gen.id === 1;
-            }
-            
-            for (const mul of this.multipliers) {
-                mul.owned = 0;
-                mul.cost = mul.baseCost;
-                mul.unlocked = mul.id === 1;
-            }
-            
-            this.boosts.click2x = false;
-            this.boosts.auto5x = false;
-            
-            this.leaderboard = [];
-            
-            this.saveGame();
-            this.saveLeaderboard();
-            
-            this.showMessage('Игра сброшена', 'warning');
-            this.render();
+            // Перезапускаем игру
+            location.reload();
         }
     }
     
