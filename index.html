@@ -3,42 +3,187 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Космический майнер</title>
+    <title>Космический Инкрементор | Автоматическая Вселенная</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Exo+2:wght@300;400;500&display=swap" rel="stylesheet">
 </head>
 <body>
+    <div class="stars"></div>
+    <div class="twinkling"></div>
+    
     <div class="container">
-        <header>
-            <h1><i class="fas fa-rocket"></i> Космический майнер</h1>
-            <div class="stats">
-                <div class="ore-count">Руда: <span id="ore">0</span></div>
-                <div class="rate">В секунду: <span id="rate">0</span></div>
+        <header class="game-header">
+            <div class="header-content">
+                <h1><i class="fas fa-rocket"></i> КОСМИЧЕСКИЙ ИНКРЕМЕНТОР</h1>
+                <div class="game-stats">
+                    <div class="stat-item">
+                        <div class="stat-label">ЭНЕРГИЯ</div>
+                        <div class="stat-value" id="energy">0</div>
+                        <div class="stat-icon"><i class="fas fa-bolt"></i></div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">В СЕКУНДУ</div>
+                        <div class="stat-value" id="eps">0</div>
+                        <div class="stat-icon"><i class="fas fa-tachometer-alt"></i></div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">СИЛА КЛИКА</div>
+                        <div class="stat-value" id="click-power">1</div>
+                        <div class="stat-icon"><i class="fas fa-mouse-pointer"></i></div>
+                    </div>
+                </div>
             </div>
         </header>
 
-        <main>
-            <section class="click-area">
-                <h2>Астероид</h2>
-                <p>Кликай, чтобы добывать руду!</p>
-                <button id="asteroid">
-                    <i class="fas fa-gem"></i>
-                </button>
-                <p id="click-power">Сила клика: <span>1</span></p>
+        <main class="game-main">
+            <section class="clicker-section">
+                <div class="clicker-container">
+                    <div class="clicker-header">
+                        <h2><i class="fas fa-satellite"></i> ЦЕНТРАЛЬНОЕ ЯДРО</h2>
+                        <p>Генерируйте энергию кликом по ядру</p>
+                    </div>
+                    <div class="clicker-visual">
+                        <div class="particles" id="particles"></div>
+                        <button class="core-btn" id="core">
+                            <div class="core-inner">
+                                <div class="core-glow"></div>
+                                <i class="fas fa-atom"></i>
+                            </div>
+                        </button>
+                        <div class="clicker-stats">
+                            <div class="click-counter">+<span id="click-value">1</span> за клик</div>
+                            <div class="auto-counter"><i class="fas fa-robot"></i> +<span id="auto-value">0</span>/сек</div>
+                        </div>
+                    </div>
+                    <div class="clicker-upgrades">
+                        <div class="upgrade-btn" id="double-click">
+                            <i class="fas fa-expand-alt"></i>
+                            <span>Усилитель ядра (x2)</span>
+                            <div class="upgrade-cost">100 энергии</div>
+                        </div>
+                        <div class="upgrade-btn" id="triple-click">
+                            <i class="fas fa-broadcast-tower"></i>
+                            <span>Квантовый реактор (x3)</span>
+                            <div class="upgrade-cost">500 энергии</div>
+                        </div>
+                    </div>
+                </div>
             </section>
 
-            <section class="upgrades">
-                <h2><i class="fas fa-cogs"></i> Улучшения</h2>
-                <div class="upgrades-list" id="upgrades-list">
-                    <!-- Улучшения будут добавляться с помощью JS -->
+            <section class="upgrades-section">
+                <div class="section-tabs">
+                    <button class="tab-btn active" data-tab="generators"><i class="fas fa-cogs"></i> Генераторы</button>
+                    <button class="tab-btn" data-tab="multipliers"><i class="fas fa-chart-line"></i> Множители</button>
+                    <button class="tab-btn" data-tab="prestige"><i class="fas fa-infinity"></i> Престиж</button>
+                </div>
+                
+                <div class="tab-content active" id="tab-generators">
+                    <div class="upgrades-grid" id="generators-list">
+                        <!-- Генераторы загружаются через JS -->
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="tab-multipliers">
+                    <div class="upgrades-grid" id="multipliers-list">
+                        <!-- Множители загружаются через JS -->
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="tab-prestige">
+                    <div class="prestige-content">
+                        <div class="prestige-card">
+                            <h3><i class="fas fa-crown"></i> СИСТЕМА ПРЕСТИЖА</h3>
+                            <p class="prestige-desc">Сбросьте прогресс за престиж-очки для получения постоянных бонусов</p>
+                            
+                            <div class="prestige-stats">
+                                <div class="prestige-stat">
+                                    <div class="stat-name">Текущий престиж:</div>
+                                    <div class="stat-value" id="prestige-level">0</div>
+                                </div>
+                                <div class="prestige-stat">
+                                    <div class="stat-name">Бонус энергии:</div>
+                                    <div class="stat-value" id="prestige-bonus">+0%</div>
+                                </div>
+                                <div class="prestige-stat">
+                                    <div class="stat-name">Доступно очков:</div>
+                                    <div class="stat-value" id="prestige-points">0</div>
+                                </div>
+                            </div>
+                            
+                            <div class="prestige-requirements">
+                                <p>Для получения 1 очка престижа требуется:</p>
+                                <div class="requirement">
+                                    <i class="fas fa-bolt"></i>
+                                    <span>1,000,000 энергии накоплено</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="prestige-progress"></div>
+                                </div>
+                                <div class="progress-text" id="prestige-progress-text">0/1,000,000</div>
+                            </div>
+                            
+                            <button class="prestige-btn" id="prestige-button" disabled>
+                                <i class="fas fa-sync-alt"></i>
+                                <span>ВЫПОЛНИТЬ ПРЕСТИЖ</span>
+                                <small>+1 очко престижа</small>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="achievements-section">
+                <h3><i class="fas fa-trophy"></i> ДОСТИЖЕНИЯ</h3>
+                <div class="achievements-grid" id="achievements-list">
+                    <!-- Достижения загружаются через JS -->
                 </div>
             </section>
         </main>
 
-        <footer>
-            <p>Создано с ❤️ и JavaScript</p>
+        <footer class="game-footer">
+            <div class="footer-content">
+                <div class="save-info">
+                    <i class="fas fa-save"></i>
+                    <span>Автосохранение: <span id="save-timer">10</span>с</span>
+                </div>
+                <div class="version">v1.0.0 | Космическая бесконечность ждет!</div>
+                <div class="controls">
+                    <button class="control-btn" id="save-btn"><i class="fas fa-save"></i> Сохранить</button>
+                    <button class="control-btn" id="reset-btn"><i class="fas fa-redo"></i> Сброс</button>
+                    <button class="control-btn" id="help-btn"><i class="fas fa-question-circle"></i> Помощь</button>
+                </div>
+            </div>
         </footer>
     </div>
+
+    <!-- Модальное окно помощи -->
+    <div class="modal" id="help-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-info-circle"></i> Как играть?</h2>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="help-section">
+                    <h3><i class="fas fa-bolt"></i> Основная механика</h3>
+                    <p>Кликайте по центральному ядру для генерации энергии. Используйте энергию для покупки генераторов, которые производят энергию автоматически.</p>
+                </div>
+                <div class="help-section">
+                    <h3><i class="fas fa-cogs"></i> Улучшения</h3>
+                    <p><strong>Генераторы:</strong> Автоматически производят энергию каждую секунду.</p>
+                    <p><strong>Множители:</strong> Увеличивают эффективность всех генераторов.</p>
+                </div>
+                <div class="help-section">
+                    <h3><i class="fas fa-crown"></i> Престиж</h3>
+                    <p>Когда достигнете 1,000,000 энергии, сможете выполнить престиж. Вы получите очки престижа, которые дают постоянный множитель бонуса.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Всплывающие сообщения -->
+    <div id="message-container"></div>
 
     <script src="script.js"></script>
 </body>
