@@ -1,15 +1,23 @@
-/* Основные стили */
+/* ===== ОСНОВНЫЕ СТИЛИ ===== */
 :root {
-    --primary-color: #00f3ff;
-    --secondary-color: #9d4edd;
-    --accent-color: #ff006e;
-    --dark-bg: #0a0e17;
-    --darker-bg: #050811;
-    --card-bg: rgba(16, 21, 34, 0.9);
-    --text-light: #e2f1ff;
-    --text-muted: #8a9bb8;
-    --success-color: #00ff9d;
-    --warning-color: #ffb800;
+    --primary: #00f3ff;
+    --secondary: #9d4edd;
+    --accent: #ff006e;
+    --success: #00ff9d;
+    --warning: #ffb800;
+    --danger: #ff4757;
+    
+    --dark-1: #0a0e17;
+    --dark-2: #101522;
+    --dark-3: #1a1f35;
+    --dark-4: #252b45;
+    
+    --light-1: #ffffff;
+    --light-2: #e2f1ff;
+    --light-3: #8a9bb8;
+    
+    --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    --glow: 0 0 20px rgba(0, 243, 255, 0.5);
 }
 
 * {
@@ -20,41 +28,91 @@
 
 body {
     font-family: 'Exo 2', sans-serif;
-    background-color: var(--dark-bg);
-    color: var(--text-light);
+    background: var(--dark-1);
+    color: var(--light-2);
     min-height: 100vh;
     overflow-x: hidden;
 }
 
-/* Анимированный фон */
-.stars, .twinkling {
+/* ===== АНИМИРОВАННЫЙ ФОН ===== */
+.stars, .twinkling, .shooting-stars {
     position: fixed;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
     width: 100%;
     height: 100%;
-    display: block;
+    pointer-events: none;
+    z-index: -1;
 }
 
 .stars {
-    background: #000 url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1IiBoZWlnaHQ9IjUiPgo8cmVjdCB3aWR0aD0iNSIgaGVpZ2h0PSI1IiBmaWxsPSIjMzMzIj48L3JlY3Q+Cjwvc3ZnPg==') repeat;
-    z-index: -2;
+    background: 
+        radial-gradient(2px 2px at 20px 30px, #eee, transparent),
+        radial-gradient(2px 2px at 40px 70px, #fff, transparent),
+        radial-gradient(1px 1px at 90px 40px, #ddd, transparent);
+    background-size: 300px 300px;
+    animation: stars 200s linear infinite;
 }
 
 .twinkling {
-    background: transparent url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1IiBoZWlnaHQ9IjUiPgo8cmVjdCB3aWR0aD0iNSIgaGVpZ2h0PSI1IiBmaWxsPSIjZmZmIj48L3JlY3Q+Cjwvc3ZnPg==') repeat;
-    z-index: -1;
-    animation: twinkle 200s linear infinite;
+    background: transparent;
+    animation: twinkle 5s ease-in-out infinite;
+}
+
+.shooting-stars {
+    background: transparent;
+}
+
+.shooting-stars::before,
+.shooting-stars::after {
+    content: '';
+    position: absolute;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    width: 150px;
+    height: 2px;
+    animation: shooting 15s linear infinite;
+}
+
+.shooting-stars::before {
+    top: 20%;
+    left: -150px;
+    animation-delay: 3s;
+}
+
+.shooting-stars::after {
+    top: 40%;
+    left: -150px;
+    animation-delay: 7s;
+}
+
+@keyframes stars {
+    from { background-position: 0 0; }
+    to { background-position: 1000px 1000px; }
 }
 
 @keyframes twinkle {
-    from { background-position: 0 0; }
-    to { background-position: -10000px 5000px; }
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
 }
 
-/* Контейнер */
+@keyframes shooting {
+    0% {
+        transform: translateX(0) translateY(0);
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateX(100vw) translateY(-100px);
+        opacity: 0;
+    }
+}
+
+/* ===== ОСНОВНОЙ КОНТЕЙНЕР ===== */
 .container {
     max-width: 1400px;
     margin: 0 auto;
@@ -63,73 +121,161 @@ body {
     z-index: 1;
 }
 
-/* Шапка */
+/* ===== ШАПКА ===== */
 .game-header {
-    background: linear-gradient(135deg, rgba(13, 20, 35, 0.95), rgba(25, 35, 60, 0.95));
+    background: linear-gradient(135deg, 
+        rgba(16, 21, 34, 0.95), 
+        rgba(25, 35, 60, 0.95));
     border-radius: 20px;
     padding: 25px;
     margin-bottom: 30px;
     border: 1px solid rgba(0, 243, 255, 0.2);
-    box-shadow: 0 10px 30px rgba(0, 243, 255, 0.1);
+    box-shadow: var(--shadow);
     backdrop-filter: blur(10px);
 }
 
-.header-content h1 {
-    font-family: 'Orbitron', sans-serif;
-    font-weight: 900;
-    font-size: 2.5rem;
-    text-align: center;
+.header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 25px;
-    background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.header-top h1 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2.2rem;
+    background: linear-gradient(45deg, var(--primary), var(--secondary));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     text-shadow: 0 0 30px rgba(0, 243, 255, 0.3);
 }
 
-.game-stats {
+.player-info {
+    display: flex;
+    gap: 25px;
+    align-items: center;
+}
+
+.player-name {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 10px 20px;
+    border-radius: 50px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.edit-name {
+    background: transparent;
+    border: none;
+    color: var(--light-3);
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 5px;
+    transition: all 0.3s;
+}
+
+.edit-name:hover {
+    color: var(--primary);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.player-level {
+    font-size: 1.1rem;
+    color: var(--light-3);
+}
+
+/* ===== СТАТИСТИКА ===== */
+.stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 20px;
 }
 
-.stat-item {
+.stat-card {
     background: rgba(255, 255, 255, 0.05);
     border-radius: 15px;
     padding: 20px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 15px;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    transition: all 0.3s ease;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
 }
 
-.stat-item:hover {
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.stat-card:hover::before {
+    opacity: 1;
+}
+
+.stat-card:hover {
     transform: translateY(-5px);
-    border-color: var(--primary-color);
-    box-shadow: 0 5px 20px rgba(0, 243, 255, 0.2);
+    border-color: var(--primary);
+    box-shadow: 0 10px 25px rgba(0, 243, 255, 0.2);
+}
+
+.stat-card.primary {
+    background: linear-gradient(135deg, 
+        rgba(0, 243, 255, 0.1), 
+        rgba(157, 78, 221, 0.1));
+    border-color: var(--primary);
+}
+
+.stat-icon {
+    font-size: 2.5rem;
+    color: var(--primary);
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+}
+
+.stat-info {
+    flex: 1;
 }
 
 .stat-label {
     font-size: 0.9rem;
-    color: var(--text-muted);
+    color: var(--light-3);
     text-transform: uppercase;
     letter-spacing: 1px;
+    margin-bottom: 5px;
 }
 
 .stat-value {
     font-family: 'Orbitron', sans-serif;
     font-size: 2rem;
     font-weight: 700;
-    color: var(--primary-color);
-    text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+    color: var(--light-1);
+    text-shadow: 0 0 10px currentColor;
 }
 
-.stat-icon {
-    font-size: 2rem;
-    color: var(--secondary-color);
+.stat-sub {
+    font-size: 0.9rem;
+    color: var(--light-3);
+    margin-top: 5px;
 }
 
-/* Основное содержимое */
+/* ===== ОСНОВНОЙ КОНТЕНТ ===== */
 .game-main {
     display: grid;
     grid-template-columns: 1fr 1.5fr;
@@ -143,13 +289,20 @@ body {
     }
 }
 
-/* Кликер-секция */
+/* ===== ЛЕВАЯ КОЛОНКА ===== */
+.left-column {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+/* ===== КЛИКЕР ===== */
 .clicker-section {
-    background: var(--card-bg);
+    background: var(--dark-2);
     border-radius: 20px;
     padding: 30px;
     border: 1px solid rgba(157, 78, 221, 0.2);
-    box-shadow: 0 10px 30px rgba(157, 78, 221, 0.1);
+    box-shadow: var(--shadow);
 }
 
 .clicker-header {
@@ -159,58 +312,83 @@ body {
 
 .clicker-header h2 {
     font-family: 'Orbitron', sans-serif;
-    font-size: 1.5rem;
+    font-size: 1.8rem;
+    color: var(--secondary);
     margin-bottom: 10px;
-    color: var(--secondary-color);
 }
 
 .clicker-header p {
-    color: var(--text-muted);
+    color: var(--light-3);
 }
 
-.clicker-visual {
+.clicker-core {
     position: relative;
-    height: 300px;
+    height: 350px;
     display: flex;
     align-items: center;
     justify-content: center;
     margin-bottom: 30px;
 }
 
-.core-btn {
-    width: 200px;
-    height: 200px;
+.particles-container {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.core-button {
+    width: 220px;
+    height: 220px;
     border: none;
     border-radius: 50%;
-    background: radial-gradient(circle at 30% 30%, var(--primary-color), var(--secondary-color));
+    background: radial-gradient(
+        circle at 30% 30%,
+        var(--primary),
+        var(--secondary)
+    );
     cursor: pointer;
     position: relative;
-    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 4rem;
+    color: white;
+    transition: all 0.3s;
+    box-shadow: 
+        0 0 50px rgba(0, 243, 255, 0.5),
+        inset 0 0 50px rgba(255, 255, 255, 0.1);
     animation: pulse 2s infinite;
 }
 
 @keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(0, 243, 255, 0.7); }
-    70% { box-shadow: 0 0 0 30px rgba(0, 243, 255, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(0, 243, 255, 0); }
+    0% {
+        box-shadow: 
+            0 0 50px rgba(0, 243, 255, 0.5),
+            inset 0 0 50px rgba(255, 255, 255, 0.1),
+            0 0 0 0 rgba(0, 243, 255, 0.7);
+    }
+    70% {
+        box-shadow: 
+            0 0 50px rgba(0, 243, 255, 0.5),
+            inset 0 0 50px rgba(255, 255, 255, 0.1),
+            0 0 0 30px rgba(0, 243, 255, 0);
+    }
+    100% {
+        box-shadow: 
+            0 0 50px rgba(0, 243, 255, 0.5),
+            inset 0 0 50px rgba(255, 255, 255, 0.1),
+            0 0 0 0 rgba(0, 243, 255, 0);
+    }
 }
 
-.core-btn:hover {
+.core-button:hover {
     transform: scale(1.05);
 }
 
-.core-btn:active {
+.core-button:active {
     transform: scale(0.95);
     animation: none;
-}
-
-.core-inner {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 .core-glow {
@@ -218,14 +396,60 @@ body {
     width: 100%;
     height: 100%;
     border-radius: 50%;
-    background: radial-gradient(circle at center, rgba(0, 243, 255, 0.4), transparent 70%);
+    background: radial-gradient(
+        circle at center,
+        rgba(0, 243, 255, 0.4),
+        transparent 70%
+    );
+    animation: rotate 20s linear infinite;
 }
 
-.core-btn i {
-    font-size: 4rem;
-    color: white;
-    z-index: 1;
-    text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.core-ring {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+.ring-1,
+.ring-2,
+.ring-3 {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    border-top-color: var(--primary);
+    animation: rotate-ring 10s linear infinite;
+}
+
+.ring-2 {
+    animation-delay: -3s;
+    border-top-color: var(--secondary);
+}
+
+.ring-3 {
+    animation-delay: -6s;
+    border-top-color: var(--accent);
+}
+
+@keyframes rotate-ring {
+    to { transform: rotate(360deg); }
+}
+
+.click-power {
+    position: absolute;
+    bottom: -40px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.5rem;
+    color: var(--success);
+    text-shadow: 0 0 10px var(--success);
 }
 
 .clicker-stats {
@@ -235,78 +459,197 @@ body {
     right: 0;
     display: flex;
     justify-content: space-around;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 15px;
+    margin-top: 20px;
 }
 
-.click-counter, .auto-counter {
-    background: rgba(0, 0, 0, 0.6);
-    padding: 10px 20px;
-    border-radius: 20px;
-    font-weight: 500;
+.click-stat {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.1rem;
 }
 
-.click-counter span, .auto-counter span {
-    color: var(--success-color);
-    font-weight: 700;
+.click-stat i {
+    color: var(--warning);
 }
 
-.auto-counter i {
-    color: var(--warning-color);
-    margin-right: 5px;
+.click-stat strong {
+    color: var(--light-1);
+    font-size: 1.2rem;
 }
 
-.particles {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-}
-
-/* Улучшения кликера */
-.clicker-upgrades {
+/* ===== БУСТЫ ===== */
+.click-boosts {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 20px;
+    margin-top: 20px;
 }
 
-.upgrade-btn {
-    background: linear-gradient(135deg, rgba(255, 0, 110, 0.1), rgba(157, 78, 221, 0.1));
-    border: 1px solid var(--accent-color);
+.boost-card {
+    background: linear-gradient(135deg,
+        rgba(255, 0, 110, 0.1),
+        rgba(157, 78, 221, 0.1));
+    border: 1px solid var(--accent);
     border-radius: 15px;
     padding: 20px;
-    text-align: center;
+    display: flex;
+    align-items: center;
+    gap: 15px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.3s;
+}
+
+.boost-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(255, 0, 110, 0.3);
+}
+
+.boost-card:active {
+    transform: translateY(0);
+}
+
+.boost-icon {
+    font-size: 2rem;
+    color: var(--accent);
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+
+.boost-info {
+    flex: 1;
+}
+
+.boost-info h4 {
+    font-size: 1.2rem;
+    margin-bottom: 5px;
+    color: var(--light-1);
+}
+
+.boost-info p {
+    font-size: 0.9rem;
+    color: var(--light-3);
+}
+
+.boost-cost {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    color: var(--warning);
+    font-size: 1.1rem;
+}
+
+/* ===== МАССОВЫЕ ПОКУПКИ ===== */
+.mass-purchase-section {
+    background: var(--dark-2);
+    border-radius: 20px;
+    padding: 30px;
+    border: 1px solid rgba(255, 184, 0, 0.2);
+}
+
+.mass-purchase-section h3 {
+    color: var(--warning);
+    margin-bottom: 25px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.5rem;
+}
+
+.mass-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.mass-purchase-btn {
+    background: linear-gradient(135deg,
+        rgba(157, 78, 221, 0.1),
+        rgba(0, 243, 255, 0.1));
+    border: 2px solid var(--secondary);
+    border-radius: 15px;
+    padding: 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 10px;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-align: center;
 }
 
-.upgrade-btn:hover:not(:disabled) {
+.mass-purchase-btn:hover:not(:disabled) {
     transform: translateY(-5px);
-    box-shadow: 0 5px 20px rgba(255, 0, 110, 0.3);
-    background: linear-gradient(135deg, rgba(255, 0, 110, 0.2), rgba(157, 78, 221, 0.2));
+    box-shadow: 0 10px 25px rgba(157, 78, 221, 0.3);
+    background: linear-gradient(135deg,
+        rgba(157, 78, 221, 0.2),
+        rgba(0, 243, 255, 0.2));
 }
 
-.upgrade-btn:disabled {
+.mass-purchase-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
 }
 
-.upgrade-btn i {
+.mass-purchase-btn i {
     font-size: 2rem;
-    color: var(--accent-color);
+    color: var(--primary);
 }
 
-.upgrade-cost {
+.mass-purchase-btn span {
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.mass-cost {
     font-family: 'Orbitron', sans-serif;
-    color: var(--warning-color);
     font-weight: 700;
+    color: var(--warning);
+    font-size: 1.2rem;
+    margin-top: 5px;
 }
 
-/* Секция улучшений */
+.quick-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 20px;
+    border-radius: 15px;
+    text-align: center;
+}
+
+.quick-stat span {
+    display: block;
+    color: var(--light-3);
+    font-size: 0.9rem;
+    margin-bottom: 5px;
+}
+
+.quick-stat strong {
+    font-size: 1.3rem;
+    color: var(--light-1);
+    font-family: 'Orbitron', sans-serif;
+}
+
+/* ===== ПРАВАЯ КОЛОНКА ===== */
+.right-column {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+/* ===== ВКЛАДКИ УЛУЧШЕНИЙ ===== */
 .upgrades-section {
-    background: var(--card-bg);
+    background: var(--dark-2);
     border-radius: 20px;
     overflow: hidden;
     border: 1px solid rgba(0, 243, 255, 0.2);
@@ -315,22 +658,22 @@ body {
 .section-tabs {
     display: flex;
     background: rgba(13, 20, 35, 0.9);
-    padding: 10px;
-    gap: 10px;
+    padding: 5px;
+    gap: 5px;
 }
 
 .tab-btn {
     flex: 1;
-    padding: 15px;
+    padding: 15px 10px;
     background: transparent;
     border: none;
-    color: var(--text-muted);
+    color: var(--light-3);
     font-family: 'Exo 2', sans-serif;
     font-size: 1rem;
     font-weight: 500;
     cursor: pointer;
     border-radius: 10px;
-    transition: all 0.3s ease;
+    transition: all 0.3s;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -339,43 +682,47 @@ body {
 
 .tab-btn.active {
     background: rgba(0, 243, 255, 0.1);
-    color: var(--primary-color);
-    border: 1px solid var(--primary-color);
+    color: var(--primary);
+    border: 1px solid var(--primary);
 }
 
 .tab-btn:hover:not(.active) {
     background: rgba(255, 255, 255, 0.05);
 }
 
+/* ===== КОНТЕНТ ВКЛАДОК ===== */
 .tab-content {
-    padding: 30px;
-    display: none;
+    padding: 25px;
     max-height: 500px;
     overflow-y: auto;
+    display: none;
 }
 
 .tab-content.active {
     display: block;
 }
 
-.upgrades-grid {
+.upgrades-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 20px;
 }
 
-.upgrade-card {
-    background: linear-gradient(135deg, rgba(16, 21, 34, 0.9), rgba(25, 35, 60, 0.9));
+/* ===== КАРТОЧКА ГЕНЕРАТОРА ===== */
+.upgrade-item {
+    background: linear-gradient(135deg,
+        rgba(16, 21, 34, 0.9),
+        rgba(25, 35, 60, 0.9));
     border-radius: 15px;
     padding: 20px;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    transition: all 0.3s ease;
+    transition: all 0.3s;
 }
 
-.upgrade-card:hover {
+.upgrade-item:hover {
     transform: translateY(-5px);
-    border-color: var(--secondary-color);
-    box-shadow: 0 5px 20px rgba(157, 78, 221, 0.2);
+    border-color: var(--secondary);
+    box-shadow: 0 10px 25px rgba(157, 78, 221, 0.2);
 }
 
 .upgrade-header {
@@ -388,7 +735,7 @@ body {
 .upgrade-icon {
     width: 50px;
     height: 50px;
-    background: linear-gradient(45deg, var(--secondary-color), var(--primary-color));
+    background: linear-gradient(45deg, var(--secondary), var(--primary));
     border-radius: 12px;
     display: flex;
     align-items: center;
@@ -397,20 +744,20 @@ body {
     color: white;
 }
 
-.upgrade-title h3 {
-    font-size: 1.1rem;
+.upgrade-info h3 {
+    font-size: 1.2rem;
     margin-bottom: 5px;
-    color: var(--text-light);
+    color: var(--light-1);
 }
 
-.upgrade-title p {
+.upgrade-info p {
     font-size: 0.9rem;
-    color: var(--text-muted);
+    color: var(--light-3);
 }
 
 .upgrade-stats {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, 1fr);
     gap: 10px;
     margin-bottom: 20px;
     padding: 15px;
@@ -418,27 +765,29 @@ body {
     border-radius: 10px;
 }
 
-.stat {
+.upgrade-stat {
     text-align: center;
 }
 
-.stat .label {
+.stat-label {
     font-size: 0.8rem;
-    color: var(--text-muted);
+    color: var(--light-3);
     text-transform: uppercase;
+    display: block;
+    margin-bottom: 5px;
 }
 
-.stat .value {
+.stat-value {
     font-family: 'Orbitron', sans-serif;
     font-weight: 700;
-    color: var(--success-color);
+    color: var(--success);
     font-size: 1.1rem;
 }
 
-.upgrade-btn-main {
+.upgrade-action {
     width: 100%;
     padding: 15px;
-    background: linear-gradient(45deg, var(--secondary-color), var(--primary-color));
+    background: linear-gradient(45deg, var(--secondary), var(--primary));
     border: none;
     border-radius: 10px;
     color: white;
@@ -446,50 +795,57 @@ body {
     font-weight: 600;
     font-size: 1rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.3s;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 10px;
 }
 
-.upgrade-btn-main:hover:not(:disabled) {
+.upgrade-action:hover:not(:disabled) {
     transform: scale(1.05);
     box-shadow: 0 5px 20px rgba(157, 78, 221, 0.4);
 }
 
-.upgrade-btn-main:disabled {
+.upgrade-action:disabled {
     background: linear-gradient(45deg, #666, #888);
     cursor: not-allowed;
     opacity: 0.7;
 }
 
-/* Престиж-секция */
+/* ===== ПРЕСТИЖ ===== */
 .prestige-content {
     text-align: center;
 }
 
-.prestige-card {
-    background: linear-gradient(135deg, rgba(255, 184, 0, 0.1), rgba(255, 0, 110, 0.1));
-    border: 2px solid var(--warning-color);
+.prestige-info {
+    background: linear-gradient(135deg,
+        rgba(255, 184, 0, 0.1),
+        rgba(255, 0, 110, 0.1));
+    border: 2px solid var(--warning);
     border-radius: 20px;
     padding: 30px;
 }
 
-.prestige-card h3 {
-    color: var(--warning-color);
+.prestige-info h3 {
+    color: var(--warning);
     margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
 }
 
-.prestige-desc {
-    color: var(--text-muted);
+.prestige-description {
+    color: var(--light-3);
     margin-bottom: 30px;
     font-size: 1.1rem;
+    line-height: 1.6;
 }
 
 .prestige-stats {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 20px;
     margin-bottom: 30px;
 }
@@ -502,24 +858,29 @@ body {
 
 .stat-name {
     font-size: 0.9rem;
-    color: var(--text-muted);
+    color: var(--light-3);
     margin-bottom: 10px;
+    display: block;
 }
 
-.prestige-requirements {
+.prestige-stat .stat-value {
+    font-size: 1.8rem;
+    color: var(--warning);
+}
+
+.prestige-progress {
     background: rgba(0, 0, 0, 0.3);
     padding: 25px;
     border-radius: 15px;
     margin-bottom: 30px;
 }
 
-.requirement {
+.progress-header {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    justify-content: center;
-    gap: 10px;
-    margin-bottom: 20px;
-    font-size: 1.1rem;
+    margin-bottom: 15px;
+    color: var(--light-2);
 }
 
 .progress-bar {
@@ -533,129 +894,376 @@ body {
 
 .progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, var(--warning-color), var(--accent-color));
+    background: linear-gradient(90deg, var(--warning), var(--accent));
     border-radius: 10px;
     width: 0%;
     transition: width 0.5s ease;
 }
 
-.progress-text {
-    font-family: 'Orbitron', sans-serif;
-    color: var(--text-light);
+.progress-sub {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--light-3);
+    font-size: 0.9rem;
 }
 
-.prestige-btn {
+.progress-sub i {
+    color: var(--warning);
+}
+
+.prestige-button {
     width: 100%;
     padding: 25px;
-    background: linear-gradient(45deg, var(--warning-color), var(--accent-color));
+    background: linear-gradient(45deg, var(--warning), var(--accent));
     border: none;
     border-radius: 15px;
     color: white;
     font-family: 'Orbitron', sans-serif;
-    font-size: 1.2rem;
+    font-size: 1.5rem;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.3s;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 10px;
+    margin-bottom: 30px;
 }
 
-.prestige-btn:hover:not(:disabled) {
+.prestige-button:hover:not(:disabled) {
     transform: scale(1.05);
-    box-shadow: 0 10px 30px rgba(255, 184, 0, 0.4);
+    box-shadow: 0 15px 35px rgba(255, 184, 0, 0.4);
 }
 
-.prestige-btn:disabled {
+.prestige-button:disabled {
     background: linear-gradient(45deg, #666, #888);
     cursor: not-allowed;
     opacity: 0.7;
 }
 
-/* Достижения */
-.achievements-section {
-    background: var(--card-bg);
-    border-radius: 20px;
-    padding: 30px;
-    margin-top: 30px;
-    border: 1px solid rgba(0, 255, 157, 0.2);
+.prestige-button small {
+    font-size: 1rem;
+    font-weight: 400;
+    opacity: 0.9;
 }
 
-.achievements-section h3 {
-    font-family: 'Orbitron', sans-serif;
-    font-size: 1.5rem;
-    margin-bottom: 25px;
-    color: var(--success-color);
+.prestige-tips {
+    text-align: left;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 20px;
+    border-radius: 15px;
+    border-left: 4px solid var(--success);
+}
+
+.prestige-tips h4 {
+    color: var(--success);
+    margin-bottom: 15px;
     display: flex;
     align-items: center;
     gap: 10px;
 }
 
-.achievements-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 20px;
+.prestige-tips ul {
+    list-style: none;
+    padding-left: 20px;
 }
 
-.achievement {
-    background: rgba(255, 255, 255, 0.05);
+.prestige-tips li {
+    margin-bottom: 10px;
+    color: var(--light-3);
+    position: relative;
+}
+
+.prestige-tips li:before {
+    content: '▶';
+    color: var(--success);
+    position: absolute;
+    left: -20px;
+}
+
+/* ===== ИВЕНТЫ ===== */
+.events-section {
+    background: var(--dark-2);
+    border-radius: 20px;
+    padding: 30px;
+    border: 1px solid rgba(0, 255, 157, 0.2);
+}
+
+.events-section h3 {
+    color: var(--success);
+    margin-bottom: 25px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.5rem;
+}
+
+.events-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.event-card {
+    background: rgba(0, 255, 157, 0.1);
+    border: 1px solid var(--success);
     border-radius: 15px;
     padding: 20px;
     display: flex;
     align-items: center;
     gap: 20px;
-    transition: all 0.3s ease;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    animation: pulse-border 2s infinite;
 }
 
-.achievement.unlocked {
-    background: rgba(0, 255, 157, 0.1);
-    border-color: var(--success-color);
+@keyframes pulse-border {
+    0%, 100% { border-color: var(--success); }
+    50% { border-color: var(--primary); }
 }
 
-.achievement-icon {
+.event-icon {
     width: 60px;
     height: 60px;
-    background: linear-gradient(45deg, var(--secondary-color), var(--primary-color));
+    background: linear-gradient(45deg, var(--success), var(--primary));
     border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.8rem;
+    font-size: 2rem;
     color: white;
 }
 
-.achievement.unlocked .achievement-icon {
-    background: linear-gradient(45deg, var(--success-color), var(--primary-color));
+.event-info {
+    flex: 1;
 }
 
-.achievement-info h4 {
+.event-info h4 {
+    font-size: 1.2rem;
+    margin-bottom: 5px;
+    color: var(--light-1);
+}
+
+.event-info p {
+    font-size: 0.9rem;
+    color: var(--light-3);
+    margin-bottom: 10px;
+}
+
+.event-timer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--warning);
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+}
+
+.event-bonus .bonus-badge {
+    background: var(--success);
+    color: var(--dark-1);
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-weight: 700;
     font-size: 1.1rem;
+}
+
+.next-event {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 15px;
+    color: var(--light-3);
+}
+
+.next-event i {
+    color: var(--warning);
+}
+
+.next-event strong {
+    color: var(--light-1);
+    font-family: 'Orbitron', sans-serif;
+}
+
+/* ===== ТАБЛИЦА ЛИДЕРОВ ===== */
+.leaderboard-section {
+    background: var(--dark-2);
+    border-radius: 20px;
+    padding: 30px;
+    margin-top: 30px;
+    border: 1px solid rgba(157, 78, 221, 0.2);
+}
+
+.leaderboard-section h3 {
+    color: var(--secondary);
+    margin-bottom: 25px;
+    font-size: 1.8rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.leaderboard-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+}
+
+.lb-tab {
+    padding: 12px 25px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    color: var(--light-3);
+    font-family: 'Exo 2', sans-serif;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.lb-tab.active {
+    background: rgba(157, 78, 221, 0.1);
+    border-color: var(--secondary);
+    color: var(--light-1);
+}
+
+.lb-tab:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.leaderboard-container {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 15px;
+    overflow: hidden;
+    margin-bottom: 25px;
+}
+
+.leaderboard-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.leaderboard-table thead {
+    background: rgba(157, 78, 221, 0.2);
+}
+
+.leaderboard-table th {
+    padding: 20px;
+    text-align: left;
+    color: var(--light-2);
+    font-weight: 600;
+    border-bottom: 2px solid var(--secondary);
+}
+
+.leaderboard-table tbody tr {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s;
+}
+
+.leaderboard-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.leaderboard-table tbody tr:nth-child(1) {
+    background: linear-gradient(90deg, 
+        rgba(255, 215, 0, 0.1), 
+        transparent);
+}
+
+.leaderboard-table tbody tr:nth-child(2) {
+    background: linear-gradient(90deg, 
+        rgba(192, 192, 192, 0.1), 
+        transparent);
+}
+
+.leaderboard-table tbody tr:nth-child(3) {
+    background: linear-gradient(90deg, 
+        rgba(205, 127, 50, 0.1), 
+        transparent);
+}
+
+.leaderboard-table td {
+    padding: 15px 20px;
+}
+
+.player-ranking {
+    display: flex;
+    justify-content: center;
+}
+
+.rank-card {
+    background: linear-gradient(135deg,
+        rgba(157, 78, 221, 0.1),
+        rgba(0, 243, 255, 0.1));
+    border: 2px solid var(--secondary);
+    border-radius: 20px;
+    padding: 25px;
+    display: flex;
+    align-items: center;
+    gap: 25px;
+    max-width: 500px;
+    width: 100%;
+}
+
+.rank-icon {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(45deg, var(--secondary), var(--primary));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    color: white;
+}
+
+.rank-info {
+    flex: 1;
+}
+
+.rank-info h4 {
+    font-size: 1.2rem;
+    color: var(--light-3);
     margin-bottom: 5px;
 }
 
-.achievement-info p {
-    font-size: 0.9rem;
-    color: var(--text-muted);
+.rank-number {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--light-1);
+    text-shadow: 0 0 20px var(--primary);
 }
 
-.achievement-progress {
-    width: 100%;
-    height: 6px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 3px;
-    margin-top: 10px;
-    overflow: hidden;
+.rank-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
-.achievement-progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--secondary-color), var(--primary-color));
-    width: 0%;
+.rank-stats .stat {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
 }
 
-/* Футер */
+.rank-stats .label {
+    color: var(--light-3);
+}
+
+.rank-stats .value {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    color: var(--light-1);
+}
+
+/* ===== ФУТЕР ===== */
 .game-footer {
     background: rgba(13, 20, 35, 0.95);
     border-radius: 20px;
@@ -672,43 +1280,67 @@ body {
     gap: 20px;
 }
 
-.save-info {
+.footer-left,
+.footer-center,
+.footer-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.save-status {
     display: flex;
     align-items: center;
     gap: 10px;
-    color: var(--text-muted);
+    color: var(--light-3);
+}
+
+#save-icon {
+    color: var(--success);
+    animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 .version {
-    color: var(--text-muted);
+    color: var(--light-3);
     font-size: 0.9rem;
 }
 
-.controls {
+.playtime {
     display: flex;
+    align-items: center;
     gap: 10px;
+    color: var(--light-3);
 }
 
-.control-btn {
+.playtime i {
+    color: var(--warning);
+}
+
+.footer-btn {
     padding: 10px 20px;
     background: rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 10px;
-    color: var(--text-light);
+    color: var(--light-2);
     font-family: 'Exo 2', sans-serif;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.3s;
     display: flex;
     align-items: center;
     gap: 8px;
 }
 
-.control-btn:hover {
+.footer-btn:hover {
     background: rgba(255, 255, 255, 0.2);
     transform: translateY(-3px);
 }
 
-/* Модальное окно */
+/* ===== МОДАЛЬНЫЕ ОКНА ===== */
 .modal {
     display: none;
     position: fixed;
@@ -720,6 +1352,7 @@ body {
     z-index: 1000;
     align-items: center;
     justify-content: center;
+    padding: 20px;
 }
 
 .modal.active {
@@ -727,12 +1360,14 @@ body {
 }
 
 .modal-content {
-    background: var(--card-bg);
+    background: var(--dark-2);
     border-radius: 20px;
-    width: 90%;
+    width: 100%;
     max-width: 600px;
-    border: 1px solid var(--primary-color);
+    border: 1px solid var(--primary);
     box-shadow: 0 20px 50px rgba(0, 243, 255, 0.3);
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
 .modal-header {
@@ -744,48 +1379,152 @@ body {
 }
 
 .modal-header h2 {
-    color: var(--primary-color);
+    color: var(--primary);
     display: flex;
     align-items: center;
     gap: 10px;
 }
 
-.close-btn {
+.close-modal {
     background: none;
     border: none;
-    color: var(--text-light);
+    color: var(--light-2);
     font-size: 2rem;
     cursor: pointer;
-    transition: color 0.3s ease;
+    transition: color 0.3s;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
 }
 
-.close-btn:hover {
-    color: var(--accent-color);
+.close-modal:hover {
+    color: var(--accent);
+    background: rgba(255, 255, 255, 0.1);
 }
 
 .modal-body {
     padding: 25px;
 }
 
-.help-section {
-    margin-bottom: 25px;
+.settings-group {
+    margin-bottom: 30px;
 }
 
-.help-section h3 {
-    color: var(--secondary-color);
-    margin-bottom: 10px;
+.settings-group h3 {
+    color: var(--secondary);
+    margin-bottom: 20px;
     display: flex;
     align-items: center;
     gap: 10px;
 }
 
-.help-section p {
-    line-height: 1.6;
-    color: var(--text-muted);
+.switch {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+    cursor: pointer;
 }
 
-/* Сообщения */
-.message-container {
+.switch input {
+    display: none;
+}
+
+.slider {
+    position: relative;
+    width: 60px;
+    height: 30px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    transition: all 0.3s;
+}
+
+.slider:before {
+    content: '';
+    position: absolute;
+    width: 26px;
+    height: 26px;
+    left: 2px;
+    top: 2px;
+    background: var(--light-3);
+    border-radius: 50%;
+    transition: all 0.3s;
+}
+
+input:checked + .slider {
+    background: var(--primary);
+}
+
+input:checked + .slider:before {
+    transform: translateX(30px);
+    background: white;
+}
+
+.switch-label {
+    font-size: 1.1rem;
+    color: var(--light-2);
+}
+
+select {
+    width: 100%;
+    padding: 12px 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    color: var(--light-2);
+    font-family: 'Exo 2', sans-serif;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+select:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.name-input {
+    display: flex;
+    gap: 10px;
+}
+
+.name-input input {
+    flex: 1;
+    padding: 12px 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    color: var(--light-2);
+    font-family: 'Exo 2', sans-serif;
+    font-size: 1rem;
+}
+
+.name-input input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.name-input button {
+    padding: 12px 25px;
+    background: var(--primary);
+    border: none;
+    border-radius: 10px;
+    color: var(--dark-1);
+    font-family: 'Exo 2', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.name-input button:hover {
+    background: var(--secondary);
+    color: white;
+}
+
+/* ===== УВЕДОМЛЕНИЯ ===== */
+.notifications {
     position: fixed;
     top: 20px;
     right: 20px;
@@ -793,18 +1532,20 @@ body {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    max-width: 350px;
 }
 
-.message {
-    background: rgba(16, 21, 34, 0.95);
-    border-left: 4px solid var(--primary-color);
+.notification {
+    background: var(--dark-2);
+    border-left: 4px solid var(--primary);
     padding: 15px 20px;
     border-radius: 10px;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
     animation: slideIn 0.3s ease;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 @keyframes slideIn {
@@ -818,19 +1559,50 @@ body {
     }
 }
 
-.message.success {
-    border-left-color: var(--success-color);
+.notification.success {
+    border-left-color: var(--success);
 }
 
-.message.error {
-    border-left-color: var(--accent-color);
+.notification.warning {
+    border-left-color: var(--warning);
 }
 
-.message.warning {
-    border-left-color: var(--warning-color);
+.notification.error {
+    border-left-color: var(--danger);
 }
 
-/* Прокрутка */
+.notification i {
+    font-size: 1.5rem;
+}
+
+.notification.success i {
+    color: var(--success);
+}
+
+.notification.warning i {
+    color: var(--warning);
+}
+
+.notification.error i {
+    color: var(--danger);
+}
+
+.notification-content {
+    flex: 1;
+}
+
+.notification-title {
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: var(--light-1);
+}
+
+.notification-message {
+    font-size: 0.9rem;
+    color: var(--light-3);
+}
+
+/* ===== ПРОКРУТКА ===== */
 ::-webkit-scrollbar {
     width: 10px;
 }
@@ -841,25 +1613,35 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-    background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+    background: linear-gradient(45deg, var(--primary), var(--secondary));
     border-radius: 5px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(45deg, var(--secondary-color), var(--primary-color));
+    background: linear-gradient(45deg, var(--secondary), var(--primary));
 }
 
-/* Адаптивность */
+/* ===== АДАПТИВНОСТЬ ===== */
 @media (max-width: 768px) {
-    .game-stats {
+    .header-top {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .stats-grid {
         grid-template-columns: 1fr;
     }
     
-    .clicker-upgrades {
+    .game-main {
         grid-template-columns: 1fr;
     }
     
-    .upgrades-grid {
+    .click-boosts,
+    .mass-buttons {
+        grid-template-columns: 1fr;
+    }
+    
+    .upgrades-list {
         grid-template-columns: 1fr;
     }
     
@@ -868,12 +1650,41 @@ body {
         text-align: center;
     }
     
-    .core-btn {
-        width: 150px;
-        height: 150px;
+    .leaderboard-table {
+        font-size: 0.9rem;
     }
     
-    .core-btn i {
+    .leaderboard-table th,
+    .leaderboard-table td {
+        padding: 10px 5px;
+    }
+    
+    .core-button {
+        width: 180px;
+        height: 180px;
         font-size: 3rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 10px;
+    }
+    
+    .game-header,
+    .clicker-section,
+    .mass-purchase-section,
+    .upgrades-section,
+    .events-section,
+    .leaderboard-section {
+        padding: 20px;
+    }
+    
+    .header-top h1 {
+        font-size: 1.8rem;
+    }
+    
+    .stat-value {
+        font-size: 1.5rem;
     }
 }
