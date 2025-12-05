@@ -1,13 +1,14 @@
-// ===== КОНСТАНТЫ =====
+// ===== КОНСТАНТЫ ИГРЫ =====
 const GAME_CONSTANTS = {
-    PRESTIGE_TIME: 4 * 60 * 60 * 1000, // 4 часа в миллисекундах
-    EVENT_INTERVAL: 60 * 60 * 1000,    // 1 час в миллисекундах
-    EVENT_DURATION: 15 * 60 * 1000,    // 15 минут в миллисекундах
+    PRESTIGE_TIME: 4 * 60 * 60 * 1000, // 4 часа
+    EVENT_INTERVAL: 60 * 60 * 1000,    // 1 час
+    EVENT_DURATION: 15 * 60 * 1000,    // 15 минут
     SAVE_INTERVAL: 30 * 1000,          // 30 секунд
     BASE_POWER: 1,
     PRESTIGE_BASE: 1000000,
     PRESTIGE_MULTIPLIER: 2.5,
-    PRICE_INCREASE: 1.15
+    PRICE_INCREASE: 1.15,
+    SERVER_URL: 'http://localhost:3000' // URL сервера для глобального топа
 };
 
 // ===== КЛАСС ИГРЫ =====
@@ -43,7 +44,7 @@ class SpaceIncrementor {
             numberFormat: 'short'
         };
         
-        // Генераторы
+        // Генераторы (без множителей)
         this.generators = [
             { id: 1, name: 'Солнечная панель', cost: 10, baseCost: 10, owned: 0, production: 0.1, icon: 'fas fa-solar-panel', unlocked: true },
             { id: 2, name: 'Ветрогенератор', cost: 50, baseCost: 50, owned: 0, production: 0.5, icon: 'fas fa-wind', unlocked: false },
@@ -51,14 +52,6 @@ class SpaceIncrementor {
             { id: 4, name: 'Ядерный реактор', cost: 1000, baseCost: 1000, owned: 0, production: 10, icon: 'fas fa-atom', unlocked: false },
             { id: 5, name: 'Термояд', cost: 5000, baseCost: 5000, owned: 0, production: 50, icon: 'fas fa-fire', unlocked: false },
             { id: 6, name: 'Сфера Дайсона', cost: 25000, baseCost: 25000, owned: 0, production: 200, icon: 'fas fa-sun', unlocked: false }
-        ];
-        
-        // Множители
-        this.multipliers = [
-            { id: 1, name: 'Эффективность I', cost: 100, baseCost: 100, owned: 0, multiplier: 1.1, icon: 'fas fa-bolt', unlocked: true },
-            { id: 2, name: 'Сеть II', cost: 500, baseCost: 500, owned: 0, multiplier: 1.25, icon: 'fas fa-network-wired', unlocked: false },
-            { id: 3, name: 'Квант III', cost: 2500, baseCost: 2500, owned: 0, multiplier: 1.5, icon: 'fas fa-microchip', unlocked: false },
-            { id: 4, name: 'Сингулярность', cost: 10000, baseCost: 10000, owned: 0, multiplier: 2, icon: 'fas fa-infinity', unlocked: false }
         ];
         
         // Бусты
@@ -71,10 +64,11 @@ class SpaceIncrementor {
         this.lastUpdate = Date.now();
         this.saveInterval = null;
         this.gameLoopInterval = null;
-        this.renderInterval = null;
+        this.autoClickerIndicator = null;
         
-        // Таблица лидеров
+        // Глобальный топ
         this.leaderboard = [];
+        this.leaderboardSort = 'prestige';
         
         // Загружаем игру
         this.loadGame();
@@ -91,34 +85,37 @@ class SpaceIncrementor {
                 
                 console.log('📂 Загружаем сохранение...');
                 
-                // Восстанавливаем все поля
-                Object.assign(this, data);
+                // Восстанавливаем основные данные
+                this.energy = data.energy || 0;
+                this.totalEnergy = data.totalEnergy || 0;
+                this.energyPerSecond = data.energyPerSecond || 0;
+                this.totalClicks = data.totalClicks || 0;
+                this.playTime = data.playTime || 0;
+                this.startTime = data.startTime || Date.now();
                 
-                // Исправляем время
-                const timePassed = Date.now() - data.lastSaveTime;
-                this.playTime += timePassed / 1000;
+                // Престиж
+                this.prestigeLevel = data.prestigeLevel || 0;
+                this.prestigePoints = data.prestigePoints || 0;
+                this.lastPrestigeTime = data.lastPrestigeTime || Date.now();
                 
-                // Восстанавливаем время из сохранения
-                if (data.lastSaveTime) {
-                    const offlineTime = Date.now() - data.lastSaveTime;
-                    
-                    // Корректируем таймер престижа
-                    if (this.nextPrestigeTime) {
-                        const remaining = this.nextPrestigeTime - data.lastSaveTime;
-                        this.nextPrestigeTime = Date.now() + Math.max(0, remaining - offlineTime);
-                    }
-                    
-                    // Корректируем таймер ивента
-                    if (this.eventEndTime) {
-                        const remaining = this.eventEndTime - data.lastSaveTime;
-                        this.eventEndTime = Date.now() + Math.max(0, remaining - offlineTime);
-                    }
-                    
-                    // Корректируем следующий ивент
-                    if (this.nextEventTime) {
-                        const remaining = this.nextEventTime - data.lastSaveTime;
-                        this.nextEventTime = Date.now() + Math.max(0, remaining - offlineTime);
-                    }
+                // Рассчитываем следующее время престижа
+                const timeSinceLastPrestige = Date.now() - this.lastPrestigeTime;
+                this.nextPrestigeTime = this.lastPrestigeTime + GAME_CONSTANTS.PRESTIGE_TIME;
+                
+                // Ивенты
+                this.activeEvent = data.activeEvent || null;
+                this.eventEndTime = data.eventEndTime || 0;
+                this.nextEventTime = data.nextEventTime || (Date.now() + GAME_CONSTANTS.EVENT_INTERVAL);
+                
+                // Настройки
+                this.settings = data.settings || this.settings;
+                
+                // Улучшения
+                if (data.generators) {
+                    this.generators = data.generators;
+                }
+                if (data.boosts) {
+                    this.boosts = data.boosts;
                 }
                 
                 // Проверяем ивенты
@@ -128,9 +125,6 @@ class SpaceIncrementor {
                 
                 // Пересчитываем производство
                 this.calculateProduction();
-                
-                // Загружаем таблицу лидеров
-                this.loadLeaderboard();
                 
                 console.log('✅ Игра успешно загружена');
                 this.showMessage('Прогресс загружен!', 'success');
@@ -171,23 +165,20 @@ class SpaceIncrementor {
                 
                 // Улучшения
                 generators: this.generators,
-                multipliers: this.multipliers,
                 boosts: this.boosts,
                 
                 // Версия
-                version: '5.1',
+                version: '2.0',
                 timestamp: Date.now()
             };
             
             localStorage.setItem('spaceIncrementorSave', JSON.stringify(saveData));
             
-            // Обновляем таблицу лидеров
-            this.updateLeaderboardEntry();
-            
-            // Визуальная обратная связь
-            this.showSaveFeedback();
+            // Обновляем глобальный топ
+            this.updateGlobalLeaderboard();
             
             console.log('💾 Игра сохранена');
+            
             return true;
         } catch (e) {
             console.error('❌ Ошибка сохранения:', e);
@@ -195,27 +186,96 @@ class SpaceIncrementor {
         }
     }
     
-    showSaveFeedback() {
-        const icon = document.getElementById('save-icon');
-        const text = document.getElementById('save-status-text');
-        
-        if (icon) {
-            icon.style.color = '#00ff9d';
-            icon.style.transform = 'scale(1.2)';
-            setTimeout(() => {
-                icon.style.color = '';
-                icon.style.transform = '';
-            }, 500);
+    async updateGlobalLeaderboard() {
+        try {
+            const playerData = {
+                username: this.settings.username,
+                prestigeLevel: this.prestigeLevel,
+                totalEnergy: this.totalEnergy,
+                playTime: this.playTime,
+                lastUpdated: Date.now()
+            };
+            
+            // Сохраняем локально для тестирования
+            let localLeaderboard = JSON.parse(localStorage.getItem('globalLeaderboard') || '[]');
+            
+            const existingIndex = localLeaderboard.findIndex(p => p.username === this.settings.username);
+            if (existingIndex !== -1) {
+                localLeaderboard[existingIndex] = playerData;
+            } else {
+                localLeaderboard.push(playerData);
+            }
+            
+            // Сортируем по престижу и энергии
+            localLeaderboard.sort((a, b) => {
+                if (b.prestigeLevel !== a.prestigeLevel) {
+                    return b.prestigeLevel - a.prestigeLevel;
+                }
+                return b.totalEnergy - a.totalEnergy;
+            });
+            
+            // Ограничиваем топ 50 игроками
+            localLeaderboard = localLeaderboard.slice(0, 50);
+            
+            localStorage.setItem('globalLeaderboard', JSON.stringify(localLeaderboard));
+            
+            // Для реального сервера (раскомментировать когда сервер будет готов):
+            /*
+            const response = await fetch(`${GAME_CONSTANTS.SERVER_URL}/update-leaderboard`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(playerData)
+            });
+            
+            if (response.ok) {
+                console.log('✅ Топ обновлен на сервере');
+            }
+            */
+            
+        } catch (error) {
+            console.error('❌ Ошибка обновления топа:', error);
         }
-        
-        if (text) {
-            const originalText = text.textContent;
-            text.textContent = 'Сохранено!';
-            text.style.color = '#00ff9d';
-            setTimeout(() => {
-                text.textContent = originalText;
-                text.style.color = '';
-            }, 2000);
+    }
+    
+    async loadGlobalLeaderboard() {
+        try {
+            // Загружаем из localStorage для тестирования
+            let localLeaderboard = JSON.parse(localStorage.getItem('globalLeaderboard') || '[]');
+            
+            // Сортируем по выбранному критерию
+            localLeaderboard.sort((a, b) => {
+                switch (this.leaderboardSort) {
+                    case 'prestige':
+                        if (b.prestigeLevel !== a.prestigeLevel) {
+                            return b.prestigeLevel - a.prestigeLevel;
+                        }
+                        return b.totalEnergy - a.totalEnergy;
+                    case 'totalEnergy':
+                        return b.totalEnergy - a.totalEnergy;
+                    case 'playTime':
+                        return b.playTime - a.playTime;
+                    default:
+                        return b.prestigeLevel - a.prestigeLevel;
+                }
+            });
+            
+            this.leaderboard = localLeaderboard;
+            
+            // Для реального сервера (раскомментировать когда сервер будет готов):
+            /*
+            const response = await fetch(`${GAME_CONSTANTS.SERVER_URL}/leaderboard`);
+            if (response.ok) {
+                this.leaderboard = await response.json();
+            }
+            */
+            
+            this.renderLeaderboard();
+            
+        } catch (error) {
+            console.error('❌ Ошибка загрузки топа:', error);
+            this.leaderboard = [];
         }
     }
     
@@ -231,8 +291,11 @@ class SpaceIncrementor {
         // Запускаем автосохранение
         this.startAutoSave();
         
-        // Запускаем рендер таймеров
-        this.startTimerRendering();
+        // Создаем индикатор авто-кликера
+        this.createAutoClickerIndicator();
+        
+        // Загружаем глобальный топ
+        this.loadGlobalLeaderboard();
         
         // Первый рендер
         this.render();
@@ -241,8 +304,6 @@ class SpaceIncrementor {
     }
     
     setupEventListeners() {
-        console.log('🔗 Настраиваем обработчики...');
-        
         // Клик по ядру
         document.getElementById('core').addEventListener('click', (e) => this.handleClick(e));
         
@@ -250,7 +311,7 @@ class SpaceIncrementor {
         document.getElementById('boost-2x').addEventListener('click', () => this.buyBoost('click2x', 100));
         document.getElementById('boost-5x').addEventListener('click', () => this.buyBoost('auto5x', 500));
         
-        // Вкладки улучшений
+        // Вкладки улучшений и топа
         document.querySelectorAll('.tab').forEach(tab => {
             tab.addEventListener('click', () => {
                 const tabName = tab.dataset.tab;
@@ -258,12 +319,18 @@ class SpaceIncrementor {
             });
         });
         
-        // Вкладки таблицы лидеров
+        // Вкладки топа
         document.querySelectorAll('.leaderboard-tab').forEach(tab => {
             tab.addEventListener('click', () => {
-                const boardType = tab.dataset.board;
-                this.switchLeaderboard(boardType);
+                const sortBy = tab.dataset.sort;
+                this.switchLeaderboardSort(sortBy);
             });
+        });
+        
+        // Кнопка обновления топа
+        document.getElementById('refresh-leaderboard').addEventListener('click', () => {
+            this.loadGlobalLeaderboard();
+            this.showMessage('Топ обновлен!', 'success');
         });
         
         // Массовые покупки
@@ -276,14 +343,20 @@ class SpaceIncrementor {
         
         // Настройки
         document.getElementById('settings-btn').addEventListener('click', () => this.showSettings());
-        document.getElementById('save-btn').addEventListener('click', () => this.saveGame());
         document.querySelector('.close-modal').addEventListener('click', () => this.hideSettings());
-        document.getElementById('save-name').addEventListener('click', () => this.changeUsername());
+        document.getElementById('save-btn').addEventListener('click', () => {
+            this.saveGame();
+            this.hideSettings();
+        });
         
         // Настройки чекбоксы
         document.getElementById('auto-save').addEventListener('change', (e) => {
             this.settings.autoSave = e.target.checked;
-            this.saveGame();
+            if (this.settings.autoSave) {
+                this.startAutoSave();
+            } else {
+                this.stopAutoSave();
+            }
         });
         
         document.getElementById('animations').addEventListener('change', (e) => {
@@ -299,44 +372,35 @@ class SpaceIncrementor {
             this.render();
         });
         
+        // Имя пользователя
+        document.getElementById('username-input').addEventListener('change', (e) => {
+            this.settings.username = e.target.value.substring(0, 20);
+            this.renderStats();
+            this.saveGame();
+        });
+        
         // Импорт/экспорт
         document.getElementById('export-btn').addEventListener('click', () => this.exportSave());
         document.getElementById('import-btn').addEventListener('click', () => this.importSave());
-        
-        // Сброс
         document.getElementById('reset-btn').addEventListener('click', () => this.resetGame());
         
-        console.log('✅ Обработчики настроены');
+        // Обработка кликов вне модального окна
+        document.getElementById('settings-modal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('settings-modal')) {
+                this.hideSettings();
+            }
+        });
     }
     
     startGameLoop() {
-        console.log('🔄 Запуск игрового цикла...');
-        
         if (this.gameLoopInterval) {
             clearInterval(this.gameLoopInterval);
         }
         
-        // Игровой цикл - обновляем логику каждые 100мс
+        // Игровой цикл - обновляем логику каждые 100мс (10 FPS)
         this.gameLoopInterval = setInterval(() => {
             this.updateGameLogic();
         }, 100);
-        
-        console.log('✅ Игровой цикл запущен');
-    }
-    
-    startTimerRendering() {
-        console.log('⏰ Запуск рендера таймеров...');
-        
-        if (this.renderInterval) {
-            clearInterval(this.renderInterval);
-        }
-        
-        // Отдельный интервал для обновления таймеров каждую секунду
-        this.renderInterval = setInterval(() => {
-            this.updateTimersDisplay();
-        }, 1000); // Обновляем каждую секунду
-        
-        console.log('✅ Рендер таймеров запущен');
     }
     
     updateGameLogic() {
@@ -351,10 +415,23 @@ class SpaceIncrementor {
             const energyGained = this.energyPerSecond * deltaTime;
             this.energy += energyGained;
             this.totalEnergy += energyGained;
+            
+            // Обновляем индикатор авто-кликера в реальном времени
+            this.updateAutoClickerIndicator(energyGained, deltaTime);
+            
+            // Обновляем статистику каждые 200мс
+            if (now - this.lastUpdate >= 200) {
+                this.renderStats();
+            }
         }
         
         // Обновляем ивенты
         this.updateEvents();
+        
+        // Обновляем таймеры каждую секунду
+        if (now - this.lastUpdate >= 1000) {
+            this.updateTimersDisplay();
+        }
         
         this.lastUpdate = now;
     }
@@ -381,7 +458,13 @@ class SpaceIncrementor {
         const prestigeTimeLeft = this.nextPrestigeTime - Date.now();
         const prestigeElement = document.getElementById('prestige-time-left');
         if (prestigeElement) {
-            prestigeElement.textContent = this.formatTime(Math.max(0, prestigeTimeLeft));
+            if (prestigeTimeLeft <= 0) {
+                prestigeElement.textContent = "Готово!";
+                prestigeElement.style.color = "#00ff9d";
+            } else {
+                prestigeElement.textContent = this.formatTime(Math.max(0, prestigeTimeLeft));
+                prestigeElement.style.color = "";
+            }
         }
         
         // Обновляем таймер ивента
@@ -390,9 +473,11 @@ class SpaceIncrementor {
             if (this.activeEvent) {
                 const eventTimeLeft = this.eventEndTime - Date.now();
                 eventElement.textContent = this.formatTime(Math.max(0, eventTimeLeft));
+                eventElement.style.color = "#00ff9d";
             } else {
                 const nextEventTimeLeft = this.nextEventTime - Date.now();
                 eventElement.textContent = this.formatTime(Math.max(0, nextEventTimeLeft));
+                eventElement.style.color = "";
             }
         }
         
@@ -403,17 +488,34 @@ class SpaceIncrementor {
         }
         
         // Обновляем прогресс престижа
+        this.updatePrestigeProgress();
+    }
+    
+    updatePrestigeProgress() {
         const required = this.getPrestigeRequirement();
         const progress = Math.min(this.totalEnergy / required, 1);
+        const progressPercent = Math.floor(progress * 100);
+        
+        // Обновляем прогресс-бар
         const progressBar = document.getElementById('prestige-progress-bar');
         const progressText = document.getElementById('prestige-progress-text');
+        const progressValue = document.getElementById('prestige-progress-value');
         
         if (progressBar) {
             progressBar.style.width = `${progress * 100}%`;
         }
         
         if (progressText) {
-            progressText.textContent = `${Math.floor(progress * 100)}%`;
+            progressText.textContent = `${progressPercent}%`;
+            if (progressPercent >= 100) {
+                progressText.style.color = "#00ff9d";
+            } else {
+                progressText.style.color = "";
+            }
+        }
+        
+        if (progressValue) {
+            progressValue.textContent = `${this.formatNumber(this.totalEnergy)} / ${this.formatNumber(required)}`;
         }
         
         // Обновляем кнопку престижа
@@ -430,36 +532,82 @@ class SpaceIncrementor {
         
         if (this.canPrestige()) {
             prestigeBtn.disabled = false;
-            prestigeBtn.innerHTML = `<i class="fas fa-sync-alt"></i> Переродиться (+${pointsReward})`;
+            prestigeBtn.innerHTML = `
+                <i class="fas fa-sync-alt"></i>
+                <span>Переродиться</span>
+                <small>(+${pointsReward} очков)</small>
+            `;
+            prestigeBtn.style.background = "linear-gradient(45deg, #ffcc00, #ff9900)";
         } else {
             prestigeBtn.disabled = true;
-            let reason = '';
             
             if (this.totalEnergy < required) {
                 const needed = required - this.totalEnergy;
-                reason = `Нужно ${this.formatNumber(needed)} энергии`;
+                const progress = Math.min(this.totalEnergy / required, 1) * 100;
+                prestigeBtn.innerHTML = `
+                    <i class="fas fa-chart-line"></i>
+                    <span>Прогресс: ${Math.floor(progress)}%</span>
+                    <small>Нужно: ${this.formatNumber(needed)}</small>
+                `;
             } else {
-                reason = `Осталось ${this.formatTime(timeLeft)}`;
+                prestigeBtn.innerHTML = `
+                    <i class="fas fa-clock"></i>
+                    <span>Ожидание</span>
+                    <small>${this.formatTime(timeLeft)}</small>
+                `;
             }
+            prestigeBtn.style.background = "linear-gradient(45deg, #3a3a3a, #4a4a4a)";
+        }
+    }
+    
+    createAutoClickerIndicator() {
+        this.autoClickerIndicator = document.createElement('div');
+        this.autoClickerIndicator.className = 'auto-clicker-indicator';
+        this.autoClickerIndicator.innerHTML = `
+            <h4><i class="fas fa-bolt"></i> Авто-кликер</h4>
+            <div class="auto-clicker-value">+0/сек</div>
+        `;
+        document.body.appendChild(this.autoClickerIndicator);
+        this.updateAutoClickerIndicator();
+    }
+    
+    updateAutoClickerIndicator(energyGained = 0, deltaTime = 1) {
+        if (!this.autoClickerIndicator) return;
+        
+        const valueElement = this.autoClickerIndicator.querySelector('.auto-clicker-value');
+        if (valueElement) {
+            // Показываем текущее производство
+            valueElement.textContent = `+${this.formatNumber(this.energyPerSecond)}/сек`;
             
-            prestigeBtn.innerHTML = `<i class="fas fa-clock"></i> ${reason}`;
+            // Анимация при получении энергии
+            if (energyGained > 0 && deltaTime < 0.2) {
+                valueElement.style.color = '#00ff9d';
+                valueElement.style.transform = 'scale(1.1)';
+                setTimeout(() => {
+                    valueElement.style.color = '';
+                    valueElement.style.transform = '';
+                }, 200);
+            }
         }
     }
     
     startAutoSave() {
-        console.log('💾 Настройка автосохранения...');
-        
         if (this.saveInterval) {
             clearInterval(this.saveInterval);
         }
         
-        this.saveInterval = setInterval(() => {
-            if (this.settings.autoSave) {
+        if (this.settings.autoSave) {
+            this.saveInterval = setInterval(() => {
                 this.saveGame();
-            }
-        }, GAME_CONSTANTS.SAVE_INTERVAL);
-        
-        console.log('✅ Автосохранение запущено');
+            }, GAME_CONSTANTS.SAVE_INTERVAL);
+        }
+    }
+    
+    stopAutoSave() {
+        if (this.saveInterval) {
+            clearInterval(this.saveInterval);
+            this.saveInterval = null;
+        }
     }
     
     handleClick(event) {
@@ -482,6 +630,10 @@ class SpaceIncrementor {
         this.totalEnergy += power;
         this.totalClicks++;
         
+        // Визуальная обратная связь
+        this.showVisualFeedback('energy-stat', '+ ' + this.formatNumber(power));
+        this.showVisualFeedback('total-energy-stat', 'Всего: ' + this.formatNumber(this.totalEnergy));
+        
         // Анимация клика
         if (this.settings.animations) {
             this.createClickEffect(event, power);
@@ -490,8 +642,33 @@ class SpaceIncrementor {
         // Проверяем разблокировки
         this.checkUnlocks();
         
-        // Рендерим
+        // Немедленно обновляем отображение
         this.renderStats();
+    }
+    
+    showVisualFeedback(elementId, text) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.classList.add('updated');
+            const originalHTML = element.innerHTML;
+            
+            // Добавляем временный текст
+            const feedback = document.createElement('div');
+            feedback.className = 'visual-feedback';
+            feedback.textContent = text;
+            feedback.style.color = '#00ff9d';
+            feedback.style.fontSize = '0.8rem';
+            feedback.style.textAlign = 'right';
+            feedback.style.marginTop = '5px';
+            
+            element.appendChild(feedback);
+            
+            // Убираем через 1 секунду
+            setTimeout(() => {
+                element.classList.remove('updated');
+                feedback.remove();
+            }, 1000);
+        }
     }
     
     createClickEffect(event, power) {
@@ -517,31 +694,14 @@ class SpaceIncrementor {
         
         core.appendChild(effect);
         
-        // Анимация
-        let opacity = 1;
-        let posY = y;
-        
-        const animate = () => {
-            opacity -= 0.02;
-            posY -= 2;
-            
-            effect.style.opacity = opacity;
-            effect.style.top = `${posY}px`;
-            
-            if (opacity > 0) {
-                requestAnimationFrame(animate);
-            } else {
-                effect.remove();
-            }
-        };
-        
-        animate();
+        // Удаляем через 1 секунду
+        setTimeout(() => effect.remove(), 1000);
     }
     
     buyGenerator(id, amount = 1) {
         const generator = this.generators.find(g => g.id === id);
         if (!generator || !generator.unlocked) {
-            console.log(`❌ Генератор не разблокирован`);
+            this.showMessage('Генератор не разблокирован!', 'error');
             return 0;
         }
         
@@ -554,6 +714,9 @@ class SpaceIncrementor {
                 generator.owned++;
                 generator.cost = this.getGeneratorCost(generator);
                 bought++;
+                
+                // Визуальная обратная связь
+                this.showPurchaseFeedback(generator.name);
             } else {
                 break;
             }
@@ -567,10 +730,54 @@ class SpaceIncrementor {
                 this.showMessage(`Куплено ${bought} ${generator.name}`, 'success');
             }
             
+            // Немедленно обновляем отображение
             this.renderStats();
+            this.renderGenerators();
+            
+            // Обновляем индикатор авто-кликера
+            this.updateAutoClickerIndicator();
         }
         
         return bought;
+    }
+    
+    showPurchaseFeedback(generatorName) {
+        // Создаем плавающее сообщение о покупке
+        const feedback = document.createElement('div');
+        feedback.className = 'click-effect';
+        feedback.textContent = `✓ ${generatorName}`;
+        feedback.style.position = 'fixed';
+        feedback.style.top = '50%';
+        feedback.style.left = '50%';
+        feedback.style.color = '#00ff9d';
+        feedback.style.fontWeight = 'bold';
+        feedback.style.fontSize = '1.5rem';
+        feedback.style.textShadow = '0 0 20px #00ff9d';
+        feedback.style.pointerEvents = 'none';
+        feedback.style.zIndex = '1000';
+        feedback.style.transform = 'translate(-50%, -50%)';
+        
+        document.body.appendChild(feedback);
+        
+        // Анимация
+        let opacity = 1;
+        let scale = 1;
+        
+        const animate = () => {
+            opacity -= 0.02;
+            scale += 0.01;
+            
+            feedback.style.opacity = opacity;
+            feedback.style.transform = `translate(-50%, -50%) scale(${scale})`;
+            
+            if (opacity > 0) {
+                requestAnimationFrame(animate);
+            } else {
+                feedback.remove();
+            }
+        };
+        
+        animate();
     }
     
     getGeneratorCost(generator) {
@@ -596,6 +803,7 @@ class SpaceIncrementor {
         
         if (totalBought > 0) {
             this.renderStats();
+            this.renderGenerators();
         }
         
         return totalBought;
@@ -620,6 +828,7 @@ class SpaceIncrementor {
                 this.showMessage(`Куплено ${bought} генераторов`, 'success');
             }
             this.renderStats();
+            this.renderGenerators();
         }
         
         return bought;
@@ -639,48 +848,14 @@ class SpaceIncrementor {
         return cheapest;
     }
     
-    buyMultiplier(id) {
-        const multiplier = this.multipliers.find(m => m.id === id);
-        if (!multiplier || !multiplier.unlocked) {
-            console.log(`❌ Множитель не разблокирован`);
-            return false;
-        }
-        
-        if (this.energy < multiplier.cost) {
-            console.log(`❌ Недостаточно энергии`);
-            return false;
-        }
-        
-        this.energy -= multiplier.cost;
-        multiplier.owned++;
-        multiplier.cost = this.getMultiplierCost(multiplier);
-        
-        // Пересчитываем производство
-        this.calculateProduction();
-        
-        if (this.settings.notifications) {
-            this.showMessage(`${multiplier.name} куплен!`, 'success');
-        }
-        
-        this.renderStats();
-        
-        return true;
-    }
-    
-    getMultiplierCost(multiplier) {
-        const baseMultiplier = Math.pow(1.5, multiplier.owned);
-        const prestigeMultiplier = Math.pow(GAME_CONSTANTS.PRESTIGE_MULTIPLIER, this.prestigeLevel);
-        return Math.floor(multiplier.baseCost * baseMultiplier * prestigeMultiplier);
-    }
-    
     buyBoost(type, cost) {
         if (this.boosts[type]) {
-            console.log(`❌ Буст уже куплен`);
+            this.showMessage('Буст уже куплен!', 'error');
             return false;
         }
         
         if (this.energy < cost) {
-            console.log(`❌ Недостаточно энергии`);
+            this.showMessage('Недостаточно энергии!', 'error');
             return false;
         }
         
@@ -706,14 +881,8 @@ class SpaceIncrementor {
             eps += gen.production * gen.owned;
         }
         
-        // Множители
-        let multiplier = 1 + (this.prestigeLevel * 0.5); // Бонус престижа
-        
-        for (const mul of this.multipliers) {
-            if (mul.owned > 0) {
-                multiplier *= Math.pow(mul.multiplier, mul.owned);
-            }
-        }
+        // Множители (только бонус престижа)
+        let multiplier = 1 + (this.prestigeLevel * 0.5);
         
         // Буст авто
         if (this.boosts.auto5x) {
@@ -743,26 +912,9 @@ class SpaceIncrementor {
             }
         }
         
-        // Разблокировка множителей
-        const multiplierPoints = [500, 2500, 10000];
-        for (let i = 0; i < multiplierPoints.length; i++) {
-            if (this.totalEnergy >= multiplierPoints[i] && i + 1 < this.multipliers.length) {
-                if (!this.multipliers[i + 1].unlocked) {
-                    this.multipliers[i + 1].unlocked = true;
-                    if (this.settings.notifications) {
-                        this.showMessage(`Разблокирован ${this.multipliers[i + 1].name}!`, 'success');
-                    }
-                }
-            }
-        }
-        
         // Пересчет стоимостей
         for (const gen of this.generators) {
             gen.cost = this.getGeneratorCost(gen);
-        }
-        
-        for (const mul of this.multipliers) {
-            mul.cost = this.getMultiplierCost(mul);
         }
     }
     
@@ -780,9 +932,7 @@ class SpaceIncrementor {
     
     prestige() {
         if (!this.canPrestige()) {
-            if (this.settings.notifications) {
-                this.showMessage('Нельзя выполнить престиж!', 'error');
-            }
+            this.showMessage('Нельзя выполнить престиж!', 'error');
             return false;
         }
         
@@ -797,15 +947,11 @@ class SpaceIncrementor {
         this.energy = 0;
         this.totalEnergy = 0;
         this.energyPerSecond = 0;
+        this.totalClicks = 0;
         
         for (const gen of this.generators) {
             gen.owned = 0;
             gen.cost = this.getGeneratorCost(gen);
-        }
-        
-        for (const mul of this.multipliers) {
-            mul.owned = 0;
-            mul.cost = this.getMultiplierCost(mul);
         }
         
         this.boosts.click2x = false;
@@ -815,14 +961,17 @@ class SpaceIncrementor {
         this.lastPrestigeTime = Date.now();
         this.nextPrestigeTime = Date.now() + GAME_CONSTANTS.PRESTIGE_TIME;
         
-        // Обновляем таблицу лидеров
-        this.updateLeaderboardEntry();
+        // Разблокируем первый уровень улучшений
+        this.generators[0].unlocked = true;
         
-        // Сохраняем
+        // Пересчитываем производство
+        this.calculateProduction();
+        
+        // Сохраняем и обновляем топ
         this.saveGame();
         
         if (this.settings.notifications) {
-            this.showMessage(`Престиж ${this.prestigeLevel}! +${points} очков`, 'warning');
+            this.showMessage(`Престиж ${this.prestigeLevel}! +${points} очков`, 'success');
         }
         
         this.render();
@@ -867,105 +1016,6 @@ class SpaceIncrementor {
         this.updateTimersDisplay();
     }
     
-    loadLeaderboard() {
-        try {
-            this.leaderboard = JSON.parse(localStorage.getItem('spaceIncrementorLeaderboard') || '[]');
-        } catch (e) {
-            console.error('❌ Ошибка загрузки таблицы лидеров:', e);
-            this.leaderboard = [];
-        }
-    }
-    
-    saveLeaderboard() {
-        try {
-            localStorage.setItem('spaceIncrementorLeaderboard', JSON.stringify(this.leaderboard));
-        } catch (e) {
-            console.error('❌ Ошибка сохранения таблицы лидеров:', e);
-        }
-    }
-    
-    updateLeaderboardEntry() {
-        const playerEntry = {
-            username: this.settings.username,
-            energy: this.totalEnergy,
-            prestige: this.prestigeLevel,
-            playTime: this.playTime,
-            lastUpdated: Date.now()
-        };
-        
-        // Находим существующую запись
-        const existingIndex = this.leaderboard.findIndex(p => p.username === this.settings.username);
-        
-        if (existingIndex !== -1) {
-            // Обновляем существующую запись
-            this.leaderboard[existingIndex] = playerEntry;
-        } else {
-            // Добавляем новую запись
-            this.leaderboard.push(playerEntry);
-        }
-        
-        // Сохраняем таблицу лидеров
-        this.saveLeaderboard();
-    }
-    
-    updateLeaderboard(sortBy = 'balance') {
-        this.loadLeaderboard();
-        
-        let sortedLeaderboard = [...this.leaderboard];
-        
-        switch (sortBy) {
-            case 'prestige':
-                sortedLeaderboard.sort((a, b) => b.prestige - a.prestige);
-                break;
-            case 'total':
-                // Общий рейтинг (престиж + баланс)
-                sortedLeaderboard.sort((a, b) => {
-                    const scoreA = a.prestige * 1000000 + a.energy;
-                    const scoreB = b.prestige * 1000000 + b.energy;
-                    return scoreB - scoreA;
-                });
-                break;
-            default: // 'balance'
-                sortedLeaderboard.sort((a, b) => b.energy - a.energy);
-        }
-        
-        // Обновляем таблицу
-        const tbody = document.getElementById('leaderboard-body');
-        if (!tbody) return;
-        
-        tbody.innerHTML = '';
-        
-        sortedLeaderboard.slice(0, 10).forEach((player, index) => {
-            const row = document.createElement('tr');
-            
-            // Медальки для топ-3
-            let medal = '';
-            if (index === 0) medal = '🥇';
-            else if (index === 1) medal = '🥈';
-            else if (index === 2) medal = '🥉';
-            
-            row.innerHTML = `
-                <td>${index + 1} ${medal}</td>
-                <td>${player.username}</td>
-                <td>${this.formatNumber(player.energy)}</td>
-                <td>${player.prestige}</td>
-                <td>${this.formatTime(player.playTime * 1000)}</td>
-            `;
-            
-            tbody.appendChild(row);
-        });
-        
-        // Находим позицию игрока
-        const playerIndex = sortedLeaderboard.findIndex(p => p.username === this.settings.username);
-        if (playerIndex !== -1) {
-            document.getElementById('player-rank').textContent = playerIndex + 1;
-            document.getElementById('player-balance').textContent = this.formatNumber(this.totalEnergy);
-        } else {
-            document.getElementById('player-rank').textContent = '-';
-            document.getElementById('player-balance').textContent = this.formatNumber(this.totalEnergy);
-        }
-    }
-    
     switchTab(tabName) {
         // Убираем активные классы
         document.querySelectorAll('.tab').forEach(tab => {
@@ -982,25 +1032,33 @@ class SpaceIncrementor {
         
         if (tabBtn) tabBtn.classList.add('active');
         if (tabContent) tabContent.classList.add('active');
+        
+        // Если переключились на топ, обновляем его
+        if (tabName === 'leaderboard') {
+            this.loadGlobalLeaderboard();
+        }
     }
     
-    switchLeaderboard(boardType) {
+    switchLeaderboardSort(sortBy) {
+        this.leaderboardSort = sortBy;
+        
         // Убираем активные классы
         document.querySelectorAll('.leaderboard-tab').forEach(tab => {
             tab.classList.remove('active');
         });
         
         // Активируем выбранную вкладку
-        const tabBtn = document.querySelector(`[data-board="${boardType}"]`);
+        const tabBtn = document.querySelector(`[data-sort="${sortBy}"]`);
         if (tabBtn) tabBtn.classList.add('active');
         
-        // Обновляем таблицу лидеров
-        this.updateLeaderboard(boardType);
+        // Обновляем топ
+        this.loadGlobalLeaderboard();
     }
     
     render() {
         this.renderStats();
-        this.renderUpgrades();
+        this.renderGenerators();
+        this.updatePrestigeProgress();
     }
     
     renderStats() {
@@ -1008,12 +1066,12 @@ class SpaceIncrementor {
             // Основная статистика
             document.getElementById('energy').textContent = this.formatNumber(this.energy);
             document.getElementById('total-energy').textContent = this.formatNumber(this.totalEnergy);
-            document.getElementById('eps').textContent = this.formatNumber(this.energyPerSecond);
-            document.getElementById('multiplier').textContent = (1 + (this.prestigeLevel * 0.5)).toFixed(2) + 'x';
+            document.getElementById('eps').textContent = this.formatNumber(this.energyPerSecond) + "/сек";
             document.getElementById('prestige').textContent = this.prestigeLevel;
             document.getElementById('prestige-points').textContent = this.prestigePoints;
-            document.getElementById('username').textContent = this.settings.username;
-            document.getElementById('player-name-display').querySelector('span').textContent = this.settings.username;
+            document.getElementById('player-name-display').textContent = this.settings.username;
+            document.getElementById('total-clicks').textContent = this.totalClicks;
+            document.getElementById('player-energy').textContent = this.formatNumber(this.totalEnergy);
             
             // Рассчитываем силу клика
             let clickPower = GAME_CONSTANTS.BASE_POWER;
@@ -1022,14 +1080,6 @@ class SpaceIncrementor {
             if (this.activeEvent && this.activeEvent.type === 'click') clickPower *= this.activeEvent.multiplier;
             
             document.getElementById('click-power-value').textContent = this.formatNumber(clickPower);
-            document.getElementById('auto-power-value').textContent = this.formatNumber(this.energyPerSecond);
-            
-            // Престиж требования
-            const required = this.getPrestigeRequirement();
-            const pointsReward = Math.floor(this.totalEnergy / required);
-            
-            document.getElementById('prestige-required').textContent = this.formatNumber(required);
-            document.getElementById('prestige-reward-points').textContent = pointsReward;
             
             // Быстрые улучшения
             const boost2x = document.getElementById('boost-2x');
@@ -1043,12 +1093,14 @@ class SpaceIncrementor {
                         <span>Куплено</span>
                         <small>Активно</small>
                     `;
+                    boost2x.classList.add('active');
                 } else {
                     boost2x.innerHTML = `
                         <i class="fas fa-expand-alt"></i>
                         <span>x2 Клик</span>
                         <small>100 энергии</small>
                     `;
+                    boost2x.classList.remove('active');
                 }
             }
             
@@ -1060,32 +1112,40 @@ class SpaceIncrementor {
                         <span>Куплено</span>
                         <small>Активно</small>
                     `;
+                    boost5x.classList.add('active');
                 } else {
                     boost5x.innerHTML = `
                         <i class="fas fa-rocket"></i>
                         <span>x5 Авто</span>
                         <small>500 энергии</small>
                     `;
+                    boost5x.classList.remove('active');
                 }
             }
             
             // Массовые покупки
-            const buy10 = document.getElementById('buy-10');
-            const buy100 = document.getElementById('buy-100');
-            const buyMax = document.getElementById('buy-max');
+            const cheapestGen = this.getCheapestGenerator();
+            document.getElementById('buy-10').disabled = !cheapestGen || this.energy < cheapestGen.cost;
+            document.getElementById('buy-100').disabled = !cheapestGen || this.energy < cheapestGen.cost;
+            document.getElementById('buy-max').disabled = !cheapestGen || this.energy < cheapestGen.cost;
             
-            if (buy10) buy10.disabled = this.energy < 10;
-            if (buy100) buy100.disabled = this.energy < 50;
-            if (buyMax) buyMax.disabled = this.energy < 10;
+            // Обновляем информацию о ивенте
+            const eventInfo = document.getElementById('active-event-info');
+            if (eventInfo) {
+                if (this.activeEvent) {
+                    const timeLeft = this.eventEndTime - Date.now();
+                    eventInfo.innerHTML = `
+                        <p><strong>${this.activeEvent.name}</strong>: ${this.activeEvent.description}</p>
+                        <p>Осталось: ${this.formatTime(timeLeft)}</p>
+                    `;
+                } else {
+                    eventInfo.innerHTML = '<p>Нет активных событий</p>';
+                }
+            }
             
         } catch (e) {
             console.error('❌ Ошибка рендера статистики:', e);
         }
-    }
-    
-    renderUpgrades() {
-        this.renderGenerators();
-        this.renderMultipliers();
     }
     
     renderGenerators() {
@@ -1108,7 +1168,7 @@ class SpaceIncrementor {
                         </div>
                         <div class="upgrade-info">
                             <h4>${gen.name}</h4>
-                            <p>${gen.production.toFixed(1)}/сек</p>
+                            <p>${gen.production.toFixed(1)} энергии/сек</p>
                         </div>
                     </div>
                     <div class="upgrade-stats">
@@ -1136,52 +1196,68 @@ class SpaceIncrementor {
         }
     }
     
-    renderMultipliers() {
-        const container = document.getElementById('multipliers-list');
+    renderLeaderboard() {
+        const container = document.getElementById('leaderboard-body');
         if (!container) return;
         
         container.innerHTML = '';
         
-        for (const mul of this.multipliers) {
-            if (!mul.unlocked) continue;
+        if (this.leaderboard.length === 0) {
+            container.innerHTML = `
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 40px;">
+                        <i class="fas fa-users" style="font-size: 2rem; color: #00b8ff; margin-bottom: 10px; display: block;"></i>
+                        <p>Топ игроков пуст</p>
+                        <p style="color: #a0a0ff; font-size: 0.9rem;">Будьте первым!</p>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        // Находим позицию текущего игрока
+        const playerIndex = this.leaderboard.findIndex(p => p.username === this.settings.username);
+        if (playerIndex !== -1) {
+            document.getElementById('player-rank').textContent = playerIndex + 1;
+        } else {
+            document.getElementById('player-rank').textContent = '-';
+        }
+        
+        // Отображаем топ 20 игроков
+        this.leaderboard.slice(0, 20).forEach((player, index) => {
+            const row = document.createElement('tr');
             
-            const canAfford = this.energy >= mul.cost;
-            const totalMultiplier = Math.pow(mul.multiplier, mul.owned).toFixed(2);
+            // Медали для топ-3
+            let medal = '';
+            let rankClass = '';
+            if (index === 0) {
+                medal = '🥇';
+                rankClass = 'rank-1';
+            } else if (index === 1) {
+                medal = '🥈';
+                rankClass = 'rank-2';
+            } else if (index === 2) {
+                medal = '🥉';
+                rankClass = 'rank-3';
+            }
             
-            const html = `
-                <div class="upgrade-item">
-                    <div class="upgrade-header">
-                        <div class="upgrade-icon">
-                            <i class="${mul.icon}"></i>
-                        </div>
-                        <div class="upgrade-info">
-                            <h4>${mul.name}</h4>
-                            <p>+${Math.floor((mul.multiplier - 1) * 100)}% к генерации</p>
-                        </div>
-                    </div>
-                    <div class="upgrade-stats">
-                        <div class="upgrade-stat">
-                            <span class="label">Куплено</span>
-                            <span class="value">${mul.owned}</span>
-                        </div>
-                        <div class="upgrade-stat">
-                            <span class="label">Множитель</span>
-                            <span class="value">x${mul.multiplier}</span>
-                        </div>
-                        <div class="upgrade-stat">
-                            <span class="label">Общий</span>
-                            <span class="value">x${totalMultiplier}</span>
-                        </div>
-                    </div>
-                    <button class="upgrade-btn" onclick="game.buyMultiplier(${mul.id})" ${canAfford ? '' : 'disabled'}>
-                        <i class="fas fa-chart-line"></i>
-                        ${canAfford ? 'Купить' : 'Не хватает'}
-                    </button>
-                </div>
+            // Подсвечиваем текущего игрока
+            if (player.username === this.settings.username) {
+                row.style.background = 'rgba(0, 255, 157, 0.1)';
+                row.style.borderLeft = '3px solid #00ff9d';
+            }
+            
+            row.className = rankClass;
+            row.innerHTML = `
+                <td>${index + 1} ${medal}</td>
+                <td><strong>${player.username}</strong></td>
+                <td>${player.prestigeLevel}</td>
+                <td>${this.formatNumber(player.totalEnergy)}</td>
+                <td>${this.formatTime(player.playTime * 1000)}</td>
             `;
             
-            container.innerHTML += html;
-        }
+            container.appendChild(row);
+        });
     }
     
     showSettings() {
@@ -1202,24 +1278,6 @@ class SpaceIncrementor {
         const modal = document.getElementById('settings-modal');
         if (modal) {
             modal.classList.remove('active');
-        }
-    }
-    
-    changeUsername() {
-        const input = document.getElementById('username-input');
-        if (!input) return;
-        
-        const name = input.value.trim();
-        
-        if (name && name !== this.settings.username) {
-            this.settings.username = name.substring(0, 20);
-            this.saveGame();
-            
-            if (this.settings.notifications) {
-                this.showMessage('Имя сохранено!', 'success');
-            }
-            
-            this.renderStats();
         }
     }
     
@@ -1260,11 +1318,11 @@ class SpaceIncrementor {
                 try {
                     const saveData = JSON.parse(event.target.result);
                     
-                    if (saveData.version && saveData.version.startsWith('5.')) {
+                    if (saveData.version) {
                         localStorage.setItem('spaceIncrementorSave', JSON.stringify(saveData));
                         location.reload();
                     } else {
-                        this.showMessage('Неверная версия сохранения', 'error');
+                        this.showMessage('Неверный формат сохранения', 'error');
                     }
                 } catch (error) {
                     console.error('❌ Ошибка импорта:', error);
@@ -1279,11 +1337,8 @@ class SpaceIncrementor {
     }
     
     resetGame() {
-        if (confirm('Вы уверены? Весь прогресс будет потерян!')) {
+        if (confirm('ВЫ УВЕРЕНЫ?\nВесь прогресс будет безвозвратно удален!')) {
             localStorage.removeItem('spaceIncrementorSave');
-            localStorage.removeItem('spaceIncrementorLeaderboard');
-            
-            // Перезапускаем игру
             location.reload();
         }
     }
@@ -1298,7 +1353,7 @@ class SpaceIncrementor {
         if (num >= 1e9) return (num / 1e9).toFixed(2) + 'B';
         if (num >= 1e6) return (num / 1e6).toFixed(2) + 'M';
         if (num >= 1e3) return (num / 1e3).toFixed(2) + 'K';
-        return num.toFixed(2);
+        return Math.floor(num).toLocaleString();
     }
     
     formatTime(ms) {
@@ -1365,22 +1420,23 @@ window.addEventListener('load', () => {
                     game.saveGame();
                 }
             },
-            buyMultiplier: (id) => {
-                if (game.buyMultiplier(id)) {
+            buyBoost: (type, cost) => {
+                if (game.buyBoost(type, cost)) {
                     game.saveGame();
                 }
             },
-            buyBoost: (type, cost) => {
-                game.buyBoost(type, cost);
-            },
             buyMultiple: (amount) => {
                 game.buyMultiple(amount);
+                game.saveGame();
             },
             buyMax: () => {
                 game.buyMax();
+                game.saveGame();
             },
             prestige: () => {
-                game.prestige();
+                if (game.prestige()) {
+                    game.saveGame();
+                }
             },
             save: () => {
                 game.saveGame();
